@@ -1,0 +1,47 @@
+{
+  "realm": "ums",
+  "enabled": true,
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Can manage academic catalog, users, students, teachers, and operational records."
+      },
+      {
+        "name": "TEACHER",
+        "description": "Can manage teaching workflows such as attendance and assignments."
+      },
+      {
+        "name": "STUDENT",
+        "description": "Can access student-facing academic information."
+      },
+      {
+        "name": "APPLICANT",
+        "description": "Optional pre-admission role for a future public application flow."
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "ums-web",
+      "name": "UMS Web Client",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "protocol": "openid-connect",
+      "redirectUris": [
+        "http://localhost:3000/*",
+        "http://localhost:5173/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000",
+        "http://localhost:5173"
+      ]
+    }
+  ]
+}
