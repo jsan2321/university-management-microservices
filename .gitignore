@@ -36,3 +36,13 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+.idea
+.mvn/*
+!.mvn/wrapper/
+!.mvn/wrapper/maven-wrapper.properties
+!.mvn/wrapper/maven-wrapper.jar
+!.mvn/maven.config
+!.mvn/jvm.config
+.env
+.agents
