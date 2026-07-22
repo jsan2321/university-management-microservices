@@ -22,7 +22,8 @@ import static org.mockito.Mockito.when;
 
 class StudentServiceTests {
     private final UUID programId = UUID.randomUUID();
-    private final StudentCommand command = new StudentCommand(null, "2026-0001", "Ada", "Lovelace", Gender.FEMALE, LocalDate.now().minusYears(20), "ada@example.com", null, null, programId, LocalDate.now());
+    private final UUID userId = UUID.randomUUID();
+    private final StudentCommand command = new StudentCommand(userId, "2026-0001", "Ada", "Lovelace", Gender.FEMALE, LocalDate.now().minusYears(20), "ada@example.com", null, null, programId, LocalDate.now());
 
     @Test
     void createsStudentWhenProgramIsActiveAndValuesAreUnique() {
@@ -54,6 +55,16 @@ class StudentServiceTests {
         assertThatThrownBy(() -> new StudentService(students, mock(AcademicProgramValidationPort.class)).createStudent(command))
                 .isInstanceOf(ApplicationException.class)
                 .hasMessageContaining("email");
+    }
+
+    @Test
+    void rejectsKeycloakUserAlreadyLinkedToAnotherStudent() {
+        StudentRepositoryPort students = mock(StudentRepositoryPort.class);
+        when(students.existsByUserId(userId, null)).thenReturn(true);
+
+        assertThatThrownBy(() -> new StudentService(students, mock(AcademicProgramValidationPort.class)).createStudent(command))
+                .isInstanceOf(ApplicationException.class)
+                .hasMessageContaining("already linked");
     }
 
     @Test

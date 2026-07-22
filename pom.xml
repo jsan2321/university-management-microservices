@@ -17,6 +17,7 @@
   <packaging>pom</packaging>
 
   <modules>
+    <module>security-common</module>
     <module>api-gateway</module>
     <module>discovery-server</module>
     <module>config-server</module>
@@ -25,6 +26,7 @@
     <module>enrollment-service</module>
     <module>attendance-service</module>
     <module>assignment-service</module>
+    <module>identity-service</module>
   </modules>
 
   <properties>

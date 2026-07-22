@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: identity-service
+  config:
+    import: "optional:configserver:http://localhost:8888"
+
+ums:
+  keycloak:
+    provisioner-client-secret: ${KEYCLOAK_PROVISIONER_CLIENT_SECRET:local-provisioner-secret-change-me}

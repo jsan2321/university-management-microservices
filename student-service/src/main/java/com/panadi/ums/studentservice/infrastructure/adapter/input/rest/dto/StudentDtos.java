@@ -16,7 +16,7 @@ public final class StudentDtos {
     }
 
     public record StudentRequest(
-            UUID userId,
+            @NotNull UUID userId,
             @NotBlank String studentCode,
             @NotBlank String firstName,
             @NotBlank String lastName,
@@ -46,6 +46,20 @@ public final class StudentDtos {
             StudentStatus status,
             LocalDateTime createdAt,
             LocalDateTime updatedAt
+    ) {
+    }
+
+    public record StudentUpdateRequest(
+            @NotBlank String studentCode,
+            @NotBlank String firstName,
+            @NotBlank String lastName,
+            Gender gender,
+            @NotNull LocalDate dateOfBirth,
+            @Email @NotBlank String email,
+            String phone,
+            String address,
+            @NotNull UUID programId,
+            @NotNull LocalDate admissionDate
     ) {
     }
 

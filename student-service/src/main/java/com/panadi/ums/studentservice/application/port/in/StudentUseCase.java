@@ -11,6 +11,8 @@ public interface StudentUseCase {
     Student createStudent(StudentCommand command);
     Student updateStudent(UUID id, StudentCommand command);
     Student getStudent(UUID id);
+    Student getStudentByUserId(UUID userId);
+    Student linkStudentUser(UUID id, UUID userId);
     PageResult<Student> listStudents(StudentStatus status, UUID programId, int page, int size);
     Student activateStudent(UUID id);
     Student deactivateStudent(UUID id);

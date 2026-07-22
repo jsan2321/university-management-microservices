@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
-@FeignClient(name = "academic-service", path = "/api/v1/academic")
+@FeignClient(name = "academic-service", path = "/internal/academic")
 interface AcademicSectionClient {
     @GetMapping("/sections/{id}")
     SectionResponse getSection(@PathVariable UUID id);

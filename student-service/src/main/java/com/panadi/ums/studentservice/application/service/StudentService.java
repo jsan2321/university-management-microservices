@@ -26,6 +26,7 @@ public class StudentService implements StudentUseCase {
         academicPrograms.validateActiveProgram(command.programId());
         ensureUniqueStudentCode(command.studentCode(), null);
         ensureUniqueEmail(command.email(), null);
+        ensureUniqueStudentUser(command.userId(), null);
         return students.saveStudent(Student.create(command.userId(), command.studentCode(), command.firstName(), command.lastName(), command.gender(), command.dateOfBirth(), command.email(), command.phone(), command.address(), command.programId(), command.admissionDate()));
     }
 
@@ -35,12 +36,26 @@ public class StudentService implements StudentUseCase {
         academicPrograms.validateActiveProgram(command.programId());
         ensureUniqueStudentCode(command.studentCode(), id);
         ensureUniqueEmail(command.email(), id);
-        return students.saveStudent(current.update(command.userId(), command.studentCode(), command.firstName(), command.lastName(), command.gender(), command.dateOfBirth(), command.email(), command.phone(), command.address(), command.programId(), command.admissionDate()));
+        return students.saveStudent(current.update(current.userId(), command.studentCode(), command.firstName(), command.lastName(), command.gender(), command.dateOfBirth(), command.email(), command.phone(), command.address(), command.programId(), command.admissionDate()));
     }
 
     @Override
     public Student getStudent(UUID id) {
         return students.findStudentById(id).orElseThrow(() -> new ResourceNotFoundException("Student not found"));
+    }
+
+    @Override
+    public Student getStudentByUserId(UUID userId) {
+        return students.findStudentByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("Student profile not found for authenticated user"));
+    }
+
+    @Override
+    public Student linkStudentUser(UUID id, UUID userId) {
+        Student current = getStudent(id);
+        ensureUniqueStudentUser(userId, id);
+        return students.saveStudent(current.update(userId, current.studentCode(), current.firstName(), current.lastName(),
+                current.gender(), current.dateOfBirth(), current.email(), current.phone(), current.address(),
+                current.programId(), current.admissionDate()));
     }
 
     @Override
@@ -72,6 +87,12 @@ public class StudentService implements StudentUseCase {
     private void ensureUniqueEmail(String email, UUID excludedId) {
         if (students.existsByEmail(email, excludedId)) {
             throw new ApplicationException("Student email already exists");
+        }
+    }
+
+    private void ensureUniqueStudentUser(UUID userId, UUID excludedId) {
+        if (students.existsByUserId(userId, excludedId)) {
+            throw new ApplicationException("Keycloak user is already linked to another student profile");
         }
     }
 }

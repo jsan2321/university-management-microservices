@@ -22,6 +22,14 @@
       {
         "name": "APPLICANT",
         "description": "Optional pre-admission role for a future public application flow."
+      },
+      {
+        "name": "INTERNAL",
+        "description": "Machine-only role for protected service-to-service endpoints."
+      },
+      {
+        "name": "PROVISIONER",
+        "description": "Machine-only role for creating and linking domain profiles."
       }
     ]
   },
@@ -34,6 +42,22 @@
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": true,
       "protocol": "openid-connect",
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "ums-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "ums-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ],
       "redirectUris": [
         "http://localhost:3000/*",
         "http://localhost:5173/*"
@@ -42,6 +66,65 @@
         "http://localhost:3000",
         "http://localhost:5173"
       ]
+    },
+    {
+      "clientId": "ums-api",
+      "name": "UMS API Audience",
+      "enabled": true,
+      "bearerOnly": true,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "ums-internal",
+      "name": "UMS Internal Service Client",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "local-internal-secret-change-me",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "ums-api-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "ums-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "ums-provisioner",
+      "name": "UMS Identity Provisioner",
+      "enabled": true,
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "secret": "local-provisioner-secret-change-me",
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "service-account-ums-internal",
+      "enabled": true,
+      "serviceAccountClientId": "ums-internal",
+      "realmRoles": ["INTERNAL"]
+    },
+    {
+      "username": "service-account-ums-provisioner",
+      "enabled": true,
+      "serviceAccountClientId": "ums-provisioner",
+      "realmRoles": ["PROVISIONER"],
+      "clientRoles": {
+        "realm-management": ["manage-users", "view-users", "query-users"]
+      }
     }
   ]
 }

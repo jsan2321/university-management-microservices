@@ -9,7 +9,9 @@ import java.util.UUID;
 public interface TeacherRepositoryPort {
     Teacher saveTeacher(Teacher teacher);
     Optional<Teacher> findTeacherById(UUID id);
+    Optional<Teacher> findTeacherByUserId(UUID userId);
     PageResult<Teacher> findTeachers(UUID departmentId, AcademicStatus status, int page, int size);
     boolean existsByTeacherCode(String teacherCode, UUID excludedId);
     boolean existsByEmail(String email, UUID excludedId);
+    boolean existsByUserId(UUID userId, UUID excludedId);
 }

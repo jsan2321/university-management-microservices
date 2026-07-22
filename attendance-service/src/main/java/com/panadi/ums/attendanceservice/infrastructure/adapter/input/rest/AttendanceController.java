@@ -4,6 +4,7 @@ import com.panadi.ums.attendanceservice.application.PageResult;
 import com.panadi.ums.attendanceservice.application.command.CreateAttendanceSessionCommand;
 import com.panadi.ums.attendanceservice.application.command.RecordAttendanceCommand;
 import com.panadi.ums.attendanceservice.application.port.in.AttendanceUseCase;
+import com.panadi.ums.attendanceservice.application.port.out.AcademicSectionLookupPort;
 import com.panadi.ums.attendanceservice.domain.model.Attendance;
 import com.panadi.ums.attendanceservice.domain.model.AttendancePercentage;
 import com.panadi.ums.attendanceservice.domain.model.AttendanceSession;
@@ -14,8 +15,11 @@ import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.At
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.CreateAttendanceSessionRequest;
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.PageResponse;
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.RecordAttendanceRequest;
+import com.panadi.ums.security.CurrentActor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,29 +37,45 @@ import java.util.function.Function;
 @RequestMapping("/api/v1/attendance")
 class AttendanceController {
     private final AttendanceUseCase useCase;
+    private final AcademicSectionLookupPort sections;
+    private final AttendanceActorTeacherClient teachers;
+    private final AttendanceActorStudentClient students;
 
-    AttendanceController(AttendanceUseCase useCase) {
+    AttendanceController(AttendanceUseCase useCase, AcademicSectionLookupPort sections,
+                         AttendanceActorTeacherClient teachers, AttendanceActorStudentClient students) {
         this.useCase = useCase;
+        this.sections = sections;
+        this.teachers = teachers;
+        this.students = students;
     }
 
     @PostMapping("/sessions")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     @ResponseStatus(HttpStatus.CREATED)
     AttendanceSessionResponse createSession(@Valid @RequestBody CreateAttendanceSessionRequest request) {
+        requireTeacherSection(request.sectionId());
         return toResponse(useCase.createSession(new CreateAttendanceSessionCommand(request.sectionId(), request.sessionNumber(), request.date(), request.topic())));
     }
 
     @GetMapping("/sessions/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     AttendanceSessionResponse getSession(@PathVariable UUID id) {
-        return toResponse(useCase.getSession(id));
+        AttendanceSession value = useCase.getSession(id);
+        requireTeacherSection(value.sectionId());
+        return toResponse(value);
     }
 
     @GetMapping("/sessions")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     PageResponse<AttendanceSessionResponse> listSessions(@RequestParam(required = false) UUID sectionId, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        requireTeacherSection(sectionId);
         return toPage(useCase.listSessions(sectionId, page, size), this::toResponse);
     }
 
     @PostMapping("/sessions/{sessionId}/records")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     List<AttendanceResponse> recordAttendance(@PathVariable UUID sessionId, @Valid @RequestBody RecordAttendanceRequest request) {
+        requireTeacherSection(useCase.getSession(sessionId).sectionId());
         List<RecordAttendanceCommand.Record> records = request.records().stream()
                 .map(record -> new RecordAttendanceCommand.Record(record.studentId(), record.status()))
                 .toList();
@@ -63,13 +83,35 @@ class AttendanceController {
     }
 
     @GetMapping("/sessions/{sessionId}/records")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     PageResponse<AttendanceResponse> listRecords(@PathVariable UUID sessionId, @RequestParam(required = false) AttendanceStatus status, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        requireTeacherSection(useCase.getSession(sessionId).sectionId());
         return toPage(useCase.listRecords(sessionId, status, page, size), this::toResponse);
     }
 
     @GetMapping("/students/{studentId}/sections/{sectionId}/percentage")
+    @PreAuthorize("hasRole('ADMIN')")
     AttendancePercentageResponse calculatePercentage(@PathVariable UUID studentId, @PathVariable UUID sectionId) {
         return toResponse(useCase.calculatePercentage(studentId, sectionId));
+    }
+
+    @GetMapping("/me/sections/{sectionId}/percentage")
+    @PreAuthorize("hasRole('STUDENT')")
+    AttendancePercentageResponse myPercentage(@PathVariable UUID sectionId) {
+        UUID studentId = students.byUser(CurrentActor.required().userId()).id();
+        return toResponse(useCase.calculatePercentage(studentId, sectionId));
+    }
+
+    private void requireTeacherSection(UUID sectionId) {
+        CurrentActor actor = CurrentActor.required();
+        if (actor.hasRole("ADMIN")) return;
+        if (!actor.hasRole("TEACHER") || sectionId == null) {
+            throw new AccessDeniedException("A section assigned to the authenticated teacher is required");
+        }
+        UUID teacherId = teachers.byUser(actor.userId()).id();
+        if (!teacherId.equals(sections.getSection(sectionId).teacherId())) {
+            throw new AccessDeniedException("Section is not assigned to the authenticated teacher");
+        }
     }
 
     private AttendanceSessionResponse toResponse(AttendanceSession session) {

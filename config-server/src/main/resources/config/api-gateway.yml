@@ -11,10 +11,45 @@ spring:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ums}
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
+      server:
+        webmvc:
+          routes:
+            - id: student-service
+              uri: lb://student-service
+              predicates:
+                - Path=/student-service/**
+              filters:
+                - StripPrefix=1
+            - id: academic-service
+              uri: lb://academic-service
+              predicates:
+                - Path=/academic-service/**
+              filters:
+                - StripPrefix=1
+            - id: enrollment-service
+              uri: lb://enrollment-service
+              predicates:
+                - Path=/enrollment-service/**
+              filters:
+                - StripPrefix=1
+            - id: attendance-service
+              uri: lb://attendance-service
+              predicates:
+                - Path=/attendance-service/**
+              filters:
+                - StripPrefix=1
+            - id: assignment-service
+              uri: lb://assignment-service
+              predicates:
+                - Path=/assignment-service/**
+              filters:
+                - StripPrefix=1
+            - id: identity-service
+              uri: lb://identity-service
+              predicates:
+                - Path=/identity-service/**
+              filters:
+                - StripPrefix=1
 
 
 eureka:
@@ -23,3 +58,7 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://localhost:8761/eureka
+
+ums:
+  frontend:
+    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}

@@ -31,7 +31,9 @@ Spring Boot microservices project for a university management system. The projec
 | `academic-service` | Departments, programs, teachers, subjects, semesters, sections | Implemented |
 | `enrollment-service` | Student enrollments and enrolled sections | Implemented |
 | `attendance-service` | Attendance sessions, records, and percentages | Implemented |
-| `assignment-service` | Assignments and submissions | Scaffolded |
+| `assignment-service` | Assignments, submissions, grading, and grade release | Implemented |
+| `identity-service` | One-step Keycloak account and domain-profile provisioning | Implemented |
+| `security-common` | Shared JWT, realm-role, audience, and internal-client security | Implemented |
 
 Authentication is handled by Keycloak.
 
@@ -66,6 +68,7 @@ academic_db
 enrollment_db
 attendance_db
 assignment_db
+identity_db
 keycloak_db
 ```
 
@@ -101,11 +104,35 @@ KEYCLOAK_PORT=8180
 KEYCLOAK_ADMIN=admin
 KEYCLOAK_ADMIN_PASSWORD=admin
 KEYCLOAK_ISSUER_URI=http://localhost:8180/realms/ums
+KEYCLOAK_INTERNAL_CLIENT_SECRET=local-internal-secret-change-me
+KEYCLOAK_PROVISIONER_CLIENT_SECRET=local-provisioner-secret-change-me
+FRONTEND_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
 ```
 
 Use `DB_HOST=localhost` when running Spring services from the IDE. If services are later run inside Docker, use `DB_HOST=postgres`.
 
 ## Run Locally
+
+Start the complete local system with one command:
+
+```powershell
+.\scripts\start-all.ps1
+```
+
+The launcher starts PostgreSQL and Keycloak, waits for them, starts Config Server and Eureka in order, and then starts the gateway and business services. Runtime logs are written under `.run/logs`.
+
+Check or stop the complete system with:
+
+```powershell
+.\scripts\status-all.ps1
+.\scripts\stop-all.ps1
+```
+
+`stop-all.ps1` preserves the PostgreSQL Docker volume and its data.
+
+For IntelliJ's built-in API client, copy `http-client.private.env.json.example` to `http-client.private.env.json`, fill in the Keycloak UUIDs, and open [http/ums-api.http](docs/http/ums-api.http). Select the `local` environment and run requests with the green play buttons.
+
+### Manual alternative
 
 Start infrastructure:
 
@@ -154,14 +181,18 @@ Keycloak owns:
 - sessions
 - token issuing
 
-Business services own domain profiles and records. Students and teachers link to Keycloak through a `userId` field.
+Business services own domain profiles and records. Every new student and teacher profile links to exactly one Keycloak user through `userId`; the same Keycloak user cannot be linked to a second profile of the same type.
 
 Students and teachers should not freely self-register as active system users. The recommended flow is:
 
-1. An administrator creates the user in Keycloak.
-2. The administrator assigns `STUDENT`, `TEACHER`, or `ADMIN`.
-3. The administrator creates the matching domain profile.
-4. The domain profile stores the Keycloak user id.
+1. The frontend signs an administrator in through Keycloak.
+2. The administrator submits one request to `identity-service`.
+3. `identity-service` creates a disabled Keycloak user, assigns the role, creates the domain profile, and then enables the account.
+4. The user changes the temporary password at first login.
+
+Use `POST /identity-service/api/v1/provisioning/teachers` or `/students` with an `Idempotency-Key` header. Existing accounts and profiles can be connected through the corresponding `/link` endpoint.
+
+The frontend uses Authorization Code with PKCE through the public `ums-web` client. After login, student and teacher screens should use `/me` endpoints; database profile IDs are derived from the JWT subject and are not trusted from browser request bodies.
 
 Public registration can be added later as an applicant/admission workflow.
 

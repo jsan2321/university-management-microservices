@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 import java.util.UUID;
 
-@FeignClient(name = "enrollment-service", path = "/api/v1/enrollments")
+@FeignClient(name = "enrollment-service", path = "/internal/enrollments")
 interface EnrollmentRosterClient {
     @GetMapping("/sections/{sectionId}/students")
     SectionStudentsResponse getActiveStudents(@PathVariable UUID sectionId);

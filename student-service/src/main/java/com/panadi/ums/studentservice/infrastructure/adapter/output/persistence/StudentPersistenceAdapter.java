@@ -38,6 +38,11 @@ class StudentPersistenceAdapter implements StudentRepositoryPort {
     }
 
     @Override
+    public Optional<Student> findStudentByUserId(UUID userId) {
+        return repository.findByUserId(userId).map(this::toDomain);
+    }
+
+    @Override
     public PageResult<Student> findStudents(StudentStatus status, UUID programId, int page, int size) {
         return toPage(repository.findAll(studentSpec(status, programId), PageRequest.of(page, size)), this::toDomain);
     }
@@ -50,6 +55,11 @@ class StudentPersistenceAdapter implements StudentRepositoryPort {
     @Override
     public boolean existsByEmail(String email, UUID excludedId) {
         return excludedId == null ? repository.existsByEmail(email) : repository.existsByEmailAndIdNot(email, excludedId);
+    }
+
+    @Override
+    public boolean existsByUserId(UUID userId, UUID excludedId) {
+        return excludedId == null ? repository.existsByUserId(userId) : repository.existsByUserIdAndIdNot(userId, excludedId);
     }
 
     private StudentEntity toEntity(Student student) {

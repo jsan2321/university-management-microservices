@@ -17,6 +17,19 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ums}
+
+ums:
+  security:
+    audience: ums-api
+    internal:
+      token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8180/realms/ums/protocol/openid-connect/token}
+      client-id: ums-internal
+      client-secret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:local-internal-secret-change-me}
 
 eureka:
   instance:

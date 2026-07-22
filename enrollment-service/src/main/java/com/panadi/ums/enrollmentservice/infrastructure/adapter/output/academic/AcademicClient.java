@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@FeignClient(name = "academic-service", path = "/api/v1/academic")
+@FeignClient(name = "academic-service", path = "/internal/academic")
 interface AcademicClient {
     @GetMapping("/semesters/{id}")
     SemesterResponse getSemester(@PathVariable UUID id);

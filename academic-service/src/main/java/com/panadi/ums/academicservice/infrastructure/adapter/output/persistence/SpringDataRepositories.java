@@ -25,10 +25,13 @@ interface ProgramJpaRepository extends JpaRepository<ProgramEntity, UUID>, JpaSp
 }
 
 interface TeacherJpaRepository extends JpaRepository<TeacherEntity, UUID>, JpaSpecificationExecutor<TeacherEntity> {
+    java.util.Optional<TeacherEntity> findByUserId(UUID userId);
     boolean existsByTeacherCode(String teacherCode);
     boolean existsByTeacherCodeAndIdNot(String teacherCode, UUID id);
     boolean existsByEmail(String email);
     boolean existsByEmailAndIdNot(String email, UUID id);
+    boolean existsByUserId(UUID userId);
+    boolean existsByUserIdAndIdNot(UUID userId, UUID id);
 }
 
 interface SemesterJpaRepository extends JpaRepository<SemesterEntity, UUID>, JpaSpecificationExecutor<SemesterEntity> {

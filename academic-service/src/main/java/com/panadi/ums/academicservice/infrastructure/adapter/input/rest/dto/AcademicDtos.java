@@ -35,7 +35,10 @@ public final class AcademicDtos {
     public record ProgramResponse(UUID id, UUID departmentId, String code, String name, int durationSemesters, int totalCredits, AcademicStatus status, LocalDateTime createdAt, LocalDateTime updatedAt) {
     }
 
-    public record TeacherRequest(@NotNull UUID departmentId, UUID userId, @NotBlank String teacherCode, @NotBlank String firstName, @NotBlank String lastName, @Email @NotBlank String email, String phone, @NotNull LocalDate hireDate) {
+    public record TeacherRequest(@NotNull UUID departmentId, @NotNull UUID userId, @NotBlank String teacherCode, @NotBlank String firstName, @NotBlank String lastName, @Email @NotBlank String email, String phone, @NotNull LocalDate hireDate) {
+    }
+
+    public record TeacherUpdateRequest(@NotNull UUID departmentId, @NotBlank String teacherCode, @NotBlank String firstName, @NotBlank String lastName, @Email @NotBlank String email, String phone, @NotNull LocalDate hireDate) {
     }
 
     public record TeacherResponse(UUID id, UUID departmentId, UUID userId, String teacherCode, String firstName, String lastName, String email, String phone, LocalDate hireDate, AcademicStatus status, LocalDateTime createdAt, LocalDateTime updatedAt) {

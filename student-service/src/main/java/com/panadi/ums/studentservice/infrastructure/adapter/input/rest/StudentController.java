@@ -8,6 +8,7 @@ import com.panadi.ums.studentservice.domain.model.StudentStatus;
 import com.panadi.ums.studentservice.infrastructure.adapter.input.rest.dto.StudentDtos.PageResponse;
 import com.panadi.ums.studentservice.infrastructure.adapter.input.rest.dto.StudentDtos.StudentRequest;
 import com.panadi.ums.studentservice.infrastructure.adapter.input.rest.dto.StudentDtos.StudentResponse;
+import com.panadi.ums.studentservice.infrastructure.adapter.input.rest.dto.StudentDtos.StudentUpdateRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,8 +41,9 @@ class StudentController {
     }
 
     @PutMapping("/{id}")
-    StudentResponse updateStudent(@PathVariable UUID id, @Valid @RequestBody StudentRequest request) {
-        return toResponse(useCase.updateStudent(id, toCommand(request)));
+    StudentResponse updateStudent(@PathVariable UUID id, @Valid @RequestBody StudentUpdateRequest request) {
+        return toResponse(useCase.updateStudent(id, new StudentCommand(null, request.studentCode(), request.firstName(), request.lastName(),
+                request.gender(), request.dateOfBirth(), request.email(), request.phone(), request.address(), request.programId(), request.admissionDate())));
     }
 
     @GetMapping("/{id}")

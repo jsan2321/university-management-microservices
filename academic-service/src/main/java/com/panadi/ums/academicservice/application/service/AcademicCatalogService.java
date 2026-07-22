@@ -127,6 +127,7 @@ public class AcademicCatalogService implements AcademicCatalogUseCase {
     public Teacher createTeacher(TeacherCommand command) {
         requireActiveDepartment(command.departmentId());
         ensureUniqueTeacher(command.teacherCode(), command.email(), null);
+        ensureUniqueTeacherUser(command.userId(), null);
         return teachers.saveTeacher(Teacher.create(command.departmentId(), command.userId(), command.teacherCode(), command.firstName(), command.lastName(), command.email(), command.phone(), command.hireDate()));
     }
 
@@ -135,12 +136,25 @@ public class AcademicCatalogService implements AcademicCatalogUseCase {
         Teacher current = getTeacher(id);
         requireActiveDepartment(command.departmentId());
         ensureUniqueTeacher(command.teacherCode(), command.email(), id);
-        return teachers.saveTeacher(current.update(command.departmentId(), command.userId(), command.teacherCode(), command.firstName(), command.lastName(), command.email(), command.phone(), command.hireDate()));
+        return teachers.saveTeacher(current.update(command.departmentId(), current.userId(), command.teacherCode(), command.firstName(), command.lastName(), command.email(), command.phone(), command.hireDate()));
     }
 
     @Override
     public Teacher getTeacher(UUID id) {
         return teachers.findTeacherById(id).orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+    }
+
+    @Override
+    public Teacher getTeacherByUserId(UUID userId) {
+        return teachers.findTeacherByUserId(userId).orElseThrow(() -> new ResourceNotFoundException("Teacher profile not found for authenticated user"));
+    }
+
+    @Override
+    public Teacher linkTeacherUser(UUID id, UUID userId) {
+        Teacher current = getTeacher(id);
+        ensureUniqueTeacherUser(userId, id);
+        return teachers.saveTeacher(current.update(current.departmentId(), userId, current.teacherCode(), current.firstName(),
+                current.lastName(), current.email(), current.phone(), current.hireDate()));
     }
 
     @Override
@@ -285,6 +299,12 @@ public class AcademicCatalogService implements AcademicCatalogUseCase {
         }
         if (teachers.existsByEmail(email, excludedId)) {
             throw new ApplicationException("Teacher email already exists");
+        }
+    }
+
+    private void ensureUniqueTeacherUser(UUID userId, UUID excludedId) {
+        if (teachers.existsByUserId(userId, excludedId)) {
+            throw new ApplicationException("Keycloak user is already linked to another teacher profile");
         }
     }
 

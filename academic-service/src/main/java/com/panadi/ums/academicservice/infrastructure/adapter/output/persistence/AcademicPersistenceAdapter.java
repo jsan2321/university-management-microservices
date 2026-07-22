@@ -119,6 +119,11 @@ class AcademicPersistenceAdapter implements DepartmentRepositoryPort, ProgramRep
     }
 
     @Override
+    public Optional<Teacher> findTeacherByUserId(UUID userId) {
+        return teachers.findByUserId(userId).map(this::toDomain);
+    }
+
+    @Override
     public PageResult<Teacher> findTeachers(UUID departmentId, AcademicStatus status, int page, int size) {
         return toPage(teachers.findAll(teacherSpec(departmentId, status), PageRequest.of(page, size)), this::toDomain);
     }
@@ -131,6 +136,11 @@ class AcademicPersistenceAdapter implements DepartmentRepositoryPort, ProgramRep
     @Override
     public boolean existsByEmail(String email, UUID excludedId) {
         return excludedId == null ? teachers.existsByEmail(email) : teachers.existsByEmailAndIdNot(email, excludedId);
+    }
+
+    @Override
+    public boolean existsByUserId(UUID userId, UUID excludedId) {
+        return excludedId == null ? teachers.existsByUserId(userId) : teachers.existsByUserIdAndIdNot(userId, excludedId);
     }
 
     @Override

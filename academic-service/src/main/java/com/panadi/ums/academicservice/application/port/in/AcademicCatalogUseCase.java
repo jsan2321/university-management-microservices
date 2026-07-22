@@ -36,6 +36,8 @@ public interface AcademicCatalogUseCase {
     Teacher createTeacher(TeacherCommand command);
     Teacher updateTeacher(UUID id, TeacherCommand command);
     Teacher getTeacher(UUID id);
+    Teacher getTeacherByUserId(UUID userId);
+    Teacher linkTeacherUser(UUID id, UUID userId);
     PageResult<Teacher> listTeachers(UUID departmentId, AcademicStatus status, int page, int size);
     Teacher activateTeacher(UUID id);
     Teacher deactivateTeacher(UUID id);

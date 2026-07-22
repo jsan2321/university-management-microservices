@@ -32,6 +32,7 @@ import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.Acad
 import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.SubjectResponse;
 import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.TeacherRequest;
 import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.TeacherResponse;
+import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.TeacherUpdateRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -127,8 +128,8 @@ class AcademicCatalogController {
     }
 
     @PutMapping("/teachers/{id}")
-    TeacherResponse updateTeacher(@PathVariable UUID id, @Valid @RequestBody TeacherRequest request) {
-        return toResponse(useCase.updateTeacher(id, new TeacherCommand(request.departmentId(), request.userId(), request.teacherCode(), request.firstName(), request.lastName(), request.email(), request.phone(), request.hireDate())));
+    TeacherResponse updateTeacher(@PathVariable UUID id, @Valid @RequestBody TeacherUpdateRequest request) {
+        return toResponse(useCase.updateTeacher(id, new TeacherCommand(request.departmentId(), null, request.teacherCode(), request.firstName(), request.lastName(), request.email(), request.phone(), request.hireDate())));
     }
 
     @GetMapping("/teachers/{id}")
