@@ -1,0 +1,103 @@
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useServiceApi } from "../../api/use-service-api";
+import { useAuth } from "../../auth/AuthProvider";
+import {
+  ErrorState,
+  LoadingState,
+  PageHeader,
+  Panel,
+  StatusBadge,
+} from "../../components/ui";
+import { page, sections, teachers } from "../../test/fixtures";
+import styles from "../feature.module.css";
+export function TeacherOverviewPage() {
+  const api = useServiceApi();
+  const { session } = useAuth();
+  const query = useQuery({
+    queryKey: ["teacher", "overview"],
+    queryFn: async () => {
+      const teacher = session?.demo ? teachers[0] : await api.teacherMe();
+      const assigned = session?.demo
+        ? page(sections)
+        : await api.sections(0, 100, {
+            teacherId: teacher.id,
+            status: "ACTIVE",
+          });
+      return { teacher, sections: assigned.content };
+    },
+  });
+  if (query.isPending) return <LoadingState />;
+  if (query.error)
+    return (
+      <ErrorState error={query.error} retry={() => void query.refetch()} />
+    );
+  return (
+    <>
+      <PageHeader
+        eyebrow="Teaching workspace"
+        title={`Good morning, ${query.data.teacher.firstName}.`}
+        description="Your assigned sections and the next academic tasks for this semester."
+      />
+      <section className={styles.stats}>
+        <div className={styles.stat}>
+          <span>Active sections</span>
+          <strong>{query.data.sections.length}</strong>
+          <small>Assigned to your profile</small>
+        </div>
+        <div className={styles.stat}>
+          <span>Attendance</span>
+          <strong>Today</strong>
+          <small>Record after each class</small>
+        </div>
+        <div className={styles.stat}>
+          <span>Teacher code</span>
+          <strong style={{ fontSize: 25 }}>
+            {query.data.teacher.teacherCode}
+          </strong>
+          <small>Profile identifier</small>
+        </div>
+        <div className={styles.stat}>
+          <span>Account</span>
+          <StatusBadge value={query.data.teacher.status} />
+          <small style={{ display: "block", marginTop: 13 }}>
+            {query.data.teacher.email}
+          </small>
+        </div>
+      </section>
+      <Panel
+        title="Assigned sections"
+        description="Open a section to manage its academic work"
+      >
+        <ul className={styles.taskList}>
+          {query.data.sections.map((section) => (
+            <li key={section.id}>
+              <div>
+                <strong>
+                  <span className={styles.sectionCode}>
+                    {section.sectionCode}
+                  </span>
+                </strong>
+                <span>
+                  {section.schedules
+                    .map(
+                      (item) =>
+                        `${item.dayOfWeek.slice(0, 3)} ${item.startTime}`,
+                    )
+                    .join(" · ")}
+                </span>
+              </div>
+              <Link
+                className={styles.link}
+                to={`/teacher/sections/${section.id}/attendance`}
+              >
+                Record attendance <ArrowRight size={15} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </Panel>
+    </>
+  );
+}

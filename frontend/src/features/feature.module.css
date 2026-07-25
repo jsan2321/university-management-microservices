@@ -1,0 +1,259 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 28px;
+  overflow: hidden;
+  background: white;
+  border: 1px solid var(--line-200);
+  border-radius: 12px;
+  box-shadow: var(--shadow-surface);
+}
+.stat {
+  min-height: 128px;
+  padding: 21px 22px;
+  border-right: 1px solid var(--line-200);
+}
+.stat:last-child {
+  border-right: 0;
+}
+.stat span {
+  display: block;
+  color: var(--ink-700);
+  font-size: 12px;
+}
+.stat strong {
+  display: block;
+  margin: 8px 0 2px;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 34px;
+  line-height: 1;
+}
+.stat small {
+  color: var(--ink-500);
+}
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.75fr);
+  gap: 20px;
+}
+.taskList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.taskList li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line-100);
+}
+.taskList li:last-child {
+  border-bottom: 0;
+}
+.taskList strong,
+.taskList span {
+  display: block;
+}
+.taskList span {
+  color: var(--ink-500);
+  font-size: 12px;
+}
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.identity {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.65fr) minmax(0, 1.35fr);
+  gap: 20px;
+}
+.identityCard {
+  padding: 24px;
+}
+.identityAvatar {
+  display: grid;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 20px;
+  place-items: center;
+  color: white;
+  background: var(--ink-700);
+  border-radius: 12px;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 22px;
+}
+.identityCard h2 {
+  margin-bottom: 3px;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 25px;
+}
+.identityCard p {
+  color: var(--ink-500);
+}
+.definition {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  margin: 0;
+  padding: 8px 20px 20px;
+}
+.definition div {
+  padding: 16px 4px;
+  border-bottom: 1px solid var(--line-100);
+}
+.definition dt {
+  color: var(--ink-500);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.definition dd {
+  margin: 4px 0 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.catalogNav {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 4px;
+  overflow-x: auto;
+  background: #eceee9;
+  border-radius: 10px;
+}
+.catalogNav a {
+  min-width: max-content;
+  padding: 8px 13px;
+  color: var(--ink-700);
+  border-radius: 7px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.catalogNav a.active {
+  color: var(--ink-950);
+  background: white;
+  box-shadow: 0 1px 3px rgb(18 32 51 / 10%);
+}
+.catalogNav button {
+  min-width: max-content;
+  padding: 8px 13px;
+  color: var(--ink-700);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+  font-weight: 600;
+}
+.catalogNav button.active {
+  color: var(--ink-950);
+  background: white;
+  box-shadow: 0 1px 3px rgb(18 32 51 / 10%);
+}
+.sectionCode {
+  display: inline-flex;
+  padding: 3px 7px;
+  color: var(--plum-650);
+  background: var(--plum-100);
+  border-radius: 5px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  font-weight: 700;
+}
+.attendanceGrid {
+  display: grid;
+  grid-template-columns: minmax(230px, 0.65fr) minmax(0, 1.35fr);
+  gap: 20px;
+}
+.sessionList {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+}
+.sessionButton {
+  width: 100%;
+  padding: 12px;
+  color: var(--ink-950);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  text-align: left;
+}
+.sessionButton:hover,
+.sessionButton.selected {
+  background: var(--blue-100);
+}
+.sessionButton strong,
+.sessionButton span {
+  display: block;
+}
+.sessionButton span {
+  color: var(--ink-500);
+  font-size: 12px;
+}
+.attendanceOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.attendanceOptions label {
+  cursor: pointer;
+}
+.attendanceOptions input {
+  position: absolute;
+  opacity: 0;
+}
+.attendanceOptions span {
+  display: block;
+  padding: 5px 8px;
+  color: var(--ink-700);
+  border: 1px solid var(--line-200);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+}
+.attendanceOptions input:checked + span {
+  color: white;
+  background: var(--ink-700);
+  border-color: var(--ink-700);
+}
+.formNotice {
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  color: #6b4a12;
+  background: var(--amber-100);
+  border-radius: 8px;
+  font-size: 12px;
+}
+@media (max-width: 960px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .stat:nth-child(2) {
+    border-right: 0;
+  }
+  .stat:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--line-200);
+  }
+  .columns,
+  .identity,
+  .attendanceGrid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 540px) {
+  .stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .stat {
+    min-height: 106px;
+    padding: 17px;
+  }
+  .definition {
+    grid-template-columns: 1fr;
+  }
+}
