@@ -23,6 +23,9 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ums}
 
+springdoc:
+  paths-to-exclude: /internal/**
+
 ums:
   security:
     audience: ums-api

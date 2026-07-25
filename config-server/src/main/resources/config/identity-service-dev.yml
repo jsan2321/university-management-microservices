@@ -1,12 +1,12 @@
 server:
-  port: 8085
+  port: 8086
 
 spring:
   application:
-    name: assignment-service
+    name: identity-service
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${ASSIGNMENT_DB_NAME:assignment_db}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${IDENTITY_DB_NAME:identity_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
   jpa:
@@ -23,6 +23,9 @@ spring:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ums}
 
+springdoc:
+  paths-to-exclude: /internal/**
+
 ums:
   security:
     audience: ums-api
@@ -30,10 +33,13 @@ ums:
       token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8180/realms/ums/protocol/openid-connect/token}
       client-id: ums-internal
       client-secret: ${KEYCLOAK_INTERNAL_CLIENT_SECRET:local-internal-secret-change-me}
+  keycloak:
+    base-url: ${KEYCLOAK_BASE_URL:http://localhost:8180}
+    realm: ums
+    provisioner-client-id: ums-provisioner
+    provisioner-client-secret: ${KEYCLOAK_PROVISIONER_CLIENT_SECRET:local-provisioner-secret-change-me}
 
 eureka:
-  instance:
-    hostname: localhost
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka

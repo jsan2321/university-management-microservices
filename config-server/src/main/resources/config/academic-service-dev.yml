@@ -1,12 +1,12 @@
 server:
-  port: 8083
+  port: 8082
 
 spring:
   application:
-    name: enrollment-service
+    name: academic-service
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${ENROLLMENT_DB_NAME:enrollment_db}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${ACADEMIC_DB_NAME:academic_db}
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
   jpa:
@@ -22,6 +22,9 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ums}
+
+springdoc:
+  paths-to-exclude: /internal/**
 
 ums:
   security:

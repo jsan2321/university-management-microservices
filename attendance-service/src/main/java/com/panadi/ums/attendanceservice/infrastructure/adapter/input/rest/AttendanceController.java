@@ -5,6 +5,7 @@ import com.panadi.ums.attendanceservice.application.command.CreateAttendanceSess
 import com.panadi.ums.attendanceservice.application.command.RecordAttendanceCommand;
 import com.panadi.ums.attendanceservice.application.port.in.AttendanceUseCase;
 import com.panadi.ums.attendanceservice.application.port.out.AcademicSectionLookupPort;
+import com.panadi.ums.attendanceservice.application.port.out.EnrollmentRosterLookupPort;
 import com.panadi.ums.attendanceservice.domain.model.Attendance;
 import com.panadi.ums.attendanceservice.domain.model.AttendancePercentage;
 import com.panadi.ums.attendanceservice.domain.model.AttendanceSession;
@@ -15,6 +16,7 @@ import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.At
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.CreateAttendanceSessionRequest;
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.PageResponse;
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.RecordAttendanceRequest;
+import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.SectionRosterResponse;
 import com.panadi.ums.security.CurrentActor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,13 +40,15 @@ import java.util.function.Function;
 class AttendanceController {
     private final AttendanceUseCase useCase;
     private final AcademicSectionLookupPort sections;
+    private final EnrollmentRosterLookupPort enrollmentRoster;
     private final AttendanceActorTeacherClient teachers;
     private final AttendanceActorStudentClient students;
 
-    AttendanceController(AttendanceUseCase useCase, AcademicSectionLookupPort sections,
+    AttendanceController(AttendanceUseCase useCase, AcademicSectionLookupPort sections, EnrollmentRosterLookupPort enrollmentRoster,
                          AttendanceActorTeacherClient teachers, AttendanceActorStudentClient students) {
         this.useCase = useCase;
         this.sections = sections;
+        this.enrollmentRoster = enrollmentRoster;
         this.teachers = teachers;
         this.students = students;
     }
@@ -87,6 +91,13 @@ class AttendanceController {
     PageResponse<AttendanceResponse> listRecords(@PathVariable UUID sessionId, @RequestParam(required = false) AttendanceStatus status, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         requireTeacherSection(useCase.getSession(sessionId).sectionId());
         return toPage(useCase.listRecords(sessionId, status, page, size), this::toResponse);
+    }
+
+    @GetMapping("/sections/{sectionId}/students")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    SectionRosterResponse sectionRoster(@PathVariable UUID sectionId) {
+        requireTeacherSection(sectionId);
+        return new SectionRosterResponse(sectionId, enrollmentRoster.getActiveStudentIdsBySection(sectionId).stream().sorted().toList());
     }
 
     @GetMapping("/students/{studentId}/sections/{sectionId}/percentage")

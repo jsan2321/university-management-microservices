@@ -112,6 +112,22 @@
   ],
   "users": [
     {
+      "username": "ums.admin",
+      "email": "admin@ums.local",
+      "firstName": "Local",
+      "lastName": "Administrator",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["ADMIN"]
+    },
+    {
       "username": "service-account-ums-internal",
       "enabled": true,
       "serviceAccountClientId": "ums-internal",
@@ -123,7 +139,7 @@
       "serviceAccountClientId": "ums-provisioner",
       "realmRoles": ["PROVISIONER"],
       "clientRoles": {
-        "realm-management": ["manage-users", "view-users", "query-users"]
+        "realm-management": ["manage-users", "view-users", "query-users", "view-realm"]
       }
     }
   ]

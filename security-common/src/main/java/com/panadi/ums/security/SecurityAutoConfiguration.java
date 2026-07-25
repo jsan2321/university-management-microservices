@@ -1,6 +1,10 @@
 package com.panadi.ums.security;
 
 import feign.RequestInterceptor;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityRequirement;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,6 +39,20 @@ import java.util.Map;
 @AutoConfiguration
 @EnableMethodSecurity
 public class SecurityAutoConfiguration {
+    private static final String OPENAPI_BEARER_SCHEME = "bearerAuth";
+
+    @Bean
+    @ConditionalOnMissingBean(OpenAPI.class)
+    OpenAPI umsOpenApi() {
+        return new OpenAPI()
+                .components(new Components().addSecuritySchemes(OPENAPI_BEARER_SCHEME,
+                        new SecurityScheme()
+                                .type(SecurityScheme.Type.HTTP)
+                                .scheme("bearer")
+                                .bearerFormat("JWT")))
+                .addSecurityItem(new SecurityRequirement().addList(OPENAPI_BEARER_SCHEME));
+    }
+
     @Bean
     @ConditionalOnMissingBean
     SecurityFilterChain serviceSecurityFilterChain(HttpSecurity http, Converter<Jwt, AbstractAuthenticationToken> converter) throws Exception {
@@ -43,6 +61,7 @@ public class SecurityAutoConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/internal/**").hasAnyRole("INTERNAL", "PROVISIONER")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(converter)))

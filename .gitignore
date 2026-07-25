@@ -48,4 +48,4 @@ build/
 .agents
 .run/
 http-client.private.env.json
-/docs
+/.private-docs/

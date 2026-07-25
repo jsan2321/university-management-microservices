@@ -18,6 +18,7 @@ class AcademicSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/internal/**").hasAnyRole("INTERNAL", "PROVISIONER")
                         .requestMatchers("/api/v1/academic/teachers/me").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/academic/teachers").denyAll()
