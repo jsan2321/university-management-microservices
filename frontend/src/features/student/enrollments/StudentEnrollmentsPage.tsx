@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
 import {
@@ -13,7 +12,7 @@ import {
   PrimaryCell,
   StatusBadge,
 } from "../../../components/ui";
-import { enrollments, page, semesters } from "../../../test/fixtures";
+import { enrollments, page } from "../../../test/fixtures";
 import styles from "../../feature.module.css";
 export function StudentEnrollmentsPage() {
   const api = useServiceApi();
@@ -51,9 +50,6 @@ export function StudentEnrollmentsPage() {
                 <th>Sections</th>
                 <th>Credits</th>
                 <th>Status</th>
-                <th>
-                  <span className="sr-only">Open</span>
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -62,27 +58,25 @@ export function StudentEnrollmentsPage() {
                   <td>
                     <PrimaryCell
                       title={
-                        semesters.find(
-                          (semester) => semester.id === item.semesterId,
-                        )?.name ?? item.semesterId
+                        item.semester.name
                       }
                       detail={`Registered ${new Date(item.createdAt).toLocaleDateString()}`}
                     />
                   </td>
-                  <td>{item.details.length}</td>
+                  <td>
+                    {item.details.map((detail) => (
+                      <Link
+                        className={styles.link}
+                        key={detail.id}
+                        to={`/student/sections/${detail.sectionId}`}
+                      >
+                        {detail.subject.code} · {detail.subject.name} · {detail.section.sectionCode}
+                      </Link>
+                    ))}
+                  </td>
                   <td>{item.totalCredits}</td>
                   <td>
                     <StatusBadge value={item.status} />
-                  </td>
-                  <td>
-                    {item.details[0] && (
-                      <Link
-                        className={styles.link}
-                        to={`/student/sections/${item.details[0].sectionId}`}
-                      >
-                        Open section <ArrowRight size={15} />
-                      </Link>
-                    )}
                   </td>
                 </tr>
               ))}

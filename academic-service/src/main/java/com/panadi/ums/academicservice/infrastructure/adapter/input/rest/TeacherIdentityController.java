@@ -5,6 +5,10 @@ import com.panadi.ums.academicservice.application.port.in.AcademicCatalogUseCase
 import com.panadi.ums.academicservice.domain.model.Teacher;
 import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.TeacherRequest;
 import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.TeacherResponse;
+import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.TeacherSectionResponse;
+import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.SubjectSummaryResponse;
+import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.SemesterSummaryResponse;
+import com.panadi.ums.academicservice.infrastructure.adapter.input.rest.dto.AcademicDtos.ScheduleResponse;
 import com.panadi.ums.security.CurrentActor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
+import java.util.List;
 
 @RestController
 class TeacherIdentityController {
@@ -30,6 +35,15 @@ class TeacherIdentityController {
     @PreAuthorize("hasRole('TEACHER')")
     TeacherResponse me() {
         return toResponse(useCase.getTeacherByUserId(CurrentActor.required().userId()));
+    }
+
+    @GetMapping("/api/v1/academic/teachers/me/sections")
+    @PreAuthorize("hasRole('TEACHER')")
+    List<TeacherSectionResponse> mySections() {
+        Teacher teacher = useCase.getTeacherByUserId(CurrentActor.required().userId());
+        return useCase.listSections(null, teacher.id(), null, null, 0, 1000).content().stream()
+                .map(this::toTeacherSectionResponse)
+                .toList();
     }
 
     @PostMapping("/internal/teachers")
@@ -48,5 +62,16 @@ class TeacherIdentityController {
         return new TeacherResponse(teacher.id(), teacher.departmentId(), teacher.userId(), teacher.teacherCode(),
                 teacher.firstName(), teacher.lastName(), teacher.email(), teacher.phone(), teacher.hireDate(),
                 teacher.status(), teacher.createdAt(), teacher.updatedAt());
+    }
+
+    private TeacherSectionResponse toTeacherSectionResponse(com.panadi.ums.academicservice.domain.model.Section section) {
+        var subject = useCase.getSubject(section.subjectId());
+        var semester = useCase.getSemester(section.semesterId());
+        List<ScheduleResponse> schedules = section.schedules().stream()
+                .map(schedule -> new ScheduleResponse(schedule.id(), schedule.dayOfWeek(), schedule.startTime(), schedule.endTime()))
+                .toList();
+        return new TeacherSectionResponse(section.id(), section.sectionCode(), section.capacity(), schedules, section.status(),
+                new SubjectSummaryResponse(subject.id(), subject.code(), subject.name()),
+                new SemesterSummaryResponse(semester.id(), semester.name()));
     }
 }

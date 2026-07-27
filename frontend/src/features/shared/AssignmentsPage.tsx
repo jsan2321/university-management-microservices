@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import type { Assignment } from "../../api/generated/contracts";
 import { useServiceApi } from "../../api/use-service-api";
 import { useAuth } from "../../auth/AuthProvider";
@@ -23,56 +24,80 @@ import {
   page,
   sections,
   students,
+  subjects,
   submissions,
+  teacherSections,
 } from "../../test/fixtures";
 import styles from "../feature.module.css";
+import { teacherSectionLabel } from "../teacher/teacher-section";
+type AssignmentSection = {
+  id: string;
+  label: string;
+  sectionCode: string;
+};
 export function AssignmentsPage() {
   const api = useServiceApi();
   const { session } = useAuth();
   const qc = useQueryClient();
   const teacher = session?.role === "TEACHER";
-  const [sectionId, setSectionId] = useState(sections[0]?.id ?? "");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [sectionId, setSectionId] = useState("");
   const [creating, setCreating] = useState(false);
   const [submitting, setSubmitting] = useState<string>();
   const [reviewing, setReviewing] = useState<string>();
-  const sectionQuery = useQuery({
+  const sectionQuery = useQuery<AssignmentSection[]>({
     queryKey: [session?.role, "assignment-sections"],
     queryFn: async () => {
-      if (session?.demo) return sections;
+      if (session?.demo) {
+        return teacher
+          ? teacherSections.map((section) => ({
+              id: section.id,
+              sectionCode: section.sectionCode,
+              label: teacherSectionLabel(section),
+            }))
+          : sections.map((section) => {
+              const subject = subjects.find((item) => item.id === section.subjectId);
+              return {
+                id: section.id,
+                sectionCode: section.sectionCode,
+                label: subject
+                  ? `${subject.code} — ${subject.name} · ${section.sectionCode}`
+                  : section.sectionCode,
+              };
+            });
+      }
       if (teacher) {
-        const profile = await api.teacherMe();
-        return (
-          await api.sections(0, 100, {
-            teacherId: profile.id,
-            status: "ACTIVE",
-          })
-        ).content;
+        return (await api.teacherSections()).map((section) => ({
+          id: section.id,
+          sectionCode: section.sectionCode,
+          label: teacherSectionLabel(section),
+        }));
       }
       const records = await api.myEnrollments(0, 100, undefined, "ACTIVE");
       return records.content.flatMap((item) =>
         item.details.map((detail) => ({
           id: detail.sectionId,
-          sectionCode: detail.sectionId,
-          subjectId: detail.subjectId,
-          teacherId: "",
-          semesterId: item.semesterId,
-          capacity: 0,
-          schedules: [],
-          status: "ACTIVE" as const,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
+          sectionCode: detail.section.sectionCode,
+          label: `${detail.subject.code} — ${detail.subject.name} · ${detail.section.sectionCode}`,
         })),
       );
     },
   });
-  const activeSection = sectionId || sectionQuery.data?.[0]?.id || "";
+  const requestedSectionId = searchParams.get("sectionId") ?? "";
+  const availableSections = sectionQuery.data ?? [];
+  const selectedSection = availableSections.some((section) => section.id === sectionId)
+    ? sectionId
+    : availableSections.some((section) => section.id === requestedSectionId)
+      ? requestedSectionId
+      : availableSections[0]?.id ?? "";
+  const activeSection = selectedSection;
   const query = useQuery({
     queryKey: [session?.role, "assignments", activeSection],
     enabled: Boolean(activeSection),
     queryFn: () =>
       session?.demo
         ? page(assignments)
-        : api.assignments(activeSection, 0, 100, undefined, !teacher),
+        : api.assignments(activeSection, 0, 100, teacher ? undefined : "PUBLISHED", !teacher),
   });
   const action = useMutation({
     mutationFn: ({ id, type }: { id: string; type: "publish" | "close" }) =>
@@ -106,9 +131,12 @@ export function AssignmentsPage() {
           <button
             key={section.id}
             className={activeSection === section.id ? styles.active : ""}
-            onClick={() => setSectionId(section.id)}
+            onClick={() => {
+              setSectionId(section.id);
+              setSearchParams({ sectionId: section.id });
+            }}
           >
-            {section.sectionCode}
+            {section.label}
           </button>
         ))}
       </div>

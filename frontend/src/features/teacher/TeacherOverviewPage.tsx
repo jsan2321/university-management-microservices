@@ -10,7 +10,8 @@ import {
   Panel,
   StatusBadge,
 } from "../../components/ui";
-import { page, sections, teachers } from "../../test/fixtures";
+import { teacherSections, teachers } from "../../test/fixtures";
+import { teacherSectionLabel } from "./teacher-section";
 import styles from "../feature.module.css";
 export function TeacherOverviewPage() {
   const api = useServiceApi();
@@ -19,15 +20,13 @@ export function TeacherOverviewPage() {
     queryKey: ["teacher", "overview"],
     queryFn: async () => {
       const teacher = session?.demo ? teachers[0] : await api.teacherMe();
-      const assigned = session?.demo
-        ? page(sections)
-        : await api.sections(0, 100, {
-            teacherId: teacher.id,
-            status: "ACTIVE",
-          });
-      return { teacher, sections: assigned.content };
+      const assigned = session?.demo ? teacherSections : await api.teacherSections();
+      return { teacher, sections: assigned.filter((section) => section.status === "ACTIVE") };
     },
   });
+  const today = new Intl.DateTimeFormat("en-US", { weekday: "long" })
+    .format(new Date())
+    .toUpperCase();
   if (query.isPending) return <LoadingState />;
   if (query.error)
     return (
@@ -47,18 +46,6 @@ export function TeacherOverviewPage() {
           <small>Assigned to your profile</small>
         </div>
         <div className={styles.stat}>
-          <span>Attendance</span>
-          <strong>Today</strong>
-          <small>Record after each class</small>
-        </div>
-        <div className={styles.stat}>
-          <span>Teacher code</span>
-          <strong style={{ fontSize: 25 }}>
-            {query.data.teacher.teacherCode}
-          </strong>
-          <small>Profile identifier</small>
-        </div>
-        <div className={styles.stat}>
           <span>Account</span>
           <StatusBadge value={query.data.teacher.status} />
           <small style={{ display: "block", marginTop: 13 }}>
@@ -66,6 +53,45 @@ export function TeacherOverviewPage() {
           </small>
         </div>
       </section>
+      <Panel
+        title="Today's classes"
+        description="Open a scheduled class to record attendance."
+      >
+        <ul className={styles.taskList}>
+          {query.data.sections
+            .filter((section) =>
+              section.schedules.some(
+                (schedule) =>
+                  schedule.dayOfWeek === today,
+              ),
+            )
+            .map((section) => (
+              <li key={section.id}>
+                <div>
+                  <strong>{teacherSectionLabel(section)}</strong>
+                  <span>
+                    {section.schedules
+                      .filter(
+                        (schedule) =>
+                          schedule.dayOfWeek === today,
+                      )
+                      .map((schedule) => `${schedule.startTime}–${schedule.endTime}`)
+                      .join(" · ")}
+                  </span>
+                </div>
+                <Link className={styles.link} to={`/teacher/sections/${section.id}/attendance`}>
+                  Record attendance <ArrowRight size={15} />
+                </Link>
+              </li>
+            ))}
+          {!query.data.sections.some((section) =>
+            section.schedules.some(
+              (schedule) =>
+                schedule.dayOfWeek === today,
+            ),
+          ) && <li><span>No classes are scheduled for today.</span></li>}
+        </ul>
+      </Panel>
       <Panel
         title="Assigned sections"
         description="Open a section to manage its academic work"
@@ -75,9 +101,7 @@ export function TeacherOverviewPage() {
             <li key={section.id}>
               <div>
                 <strong>
-                  <span className={styles.sectionCode}>
-                    {section.sectionCode}
-                  </span>
+                  {teacherSectionLabel(section)}
                 </strong>
                 <span>
                   {section.schedules

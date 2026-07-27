@@ -63,7 +63,7 @@ export function ProfilePage() {
               <dd>{profile.email}</dd>
             </div>
             <div>
-              <dt>Profile code</dt>
+              <dt>{"teacherCode" in profile ? "Teacher code" : "Student code"}</dt>
               <dd>{code}</dd>
             </div>
             <div>

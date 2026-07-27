@@ -11,6 +11,7 @@ import type {
   Subject,
   Submission,
   Teacher,
+  TeacherSection,
 } from "../api/generated/contracts";
 const now = "2026-10-14T15:00:00Z";
 export const departments: Department[] = [
@@ -133,6 +134,19 @@ export const sections: Section[] = [
     updatedAt: now,
   },
 ];
+export const teacherSections: TeacherSection[] = sections.map((section) => {
+  const subject = subjects.find((item) => item.id === section.subjectId)!;
+  const semester = semesters.find((item) => item.id === section.semesterId)!;
+  return {
+    id: section.id,
+    sectionCode: section.sectionCode,
+    capacity: section.capacity,
+    schedules: section.schedules,
+    status: section.status,
+    subject: { id: subject.id, code: subject.code, name: subject.name },
+    semester: { id: semester.id, name: semester.name },
+  };
+});
 export const enrollments: Enrollment[] = [
   {
     id: "e1",
@@ -140,7 +154,15 @@ export const enrollments: Enrollment[] = [
     semesterId: "sem1",
     status: "ACTIVE",
     totalCredits: 4,
-    details: [{ id: "ed1", sectionId: "sec1", subjectId: "sub1", credits: 4 }],
+    semester: { id: "sem1", name: "Fall 2026" },
+    details: [{
+      id: "ed1",
+      sectionId: "sec1",
+      subjectId: "sub1",
+      credits: 4,
+      section: { id: "sec1", sectionCode: "CS402-A" },
+      subject: { id: "sub1", code: "CS-402", name: "Distributed Systems" },
+    }],
     createdAt: now,
     updatedAt: now,
   },

@@ -65,6 +65,17 @@ public final class AcademicDtos {
     public record SectionResponse(UUID id, UUID subjectId, UUID teacherId, UUID semesterId, String sectionCode, int capacity, List<ScheduleResponse> schedules, AcademicStatus status, LocalDateTime createdAt, LocalDateTime updatedAt) {
     }
 
+    public record TeacherSectionResponse(UUID id, String sectionCode, int capacity, List<ScheduleResponse> schedules,
+                                         AcademicStatus status, SubjectSummaryResponse subject,
+                                         SemesterSummaryResponse semester) {
+    }
+
+    public record SubjectSummaryResponse(UUID id, String code, String name) {
+    }
+
+    public record SemesterSummaryResponse(UUID id, String name) {
+    }
+
     public record ScheduleResponse(UUID id, DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
     }
 

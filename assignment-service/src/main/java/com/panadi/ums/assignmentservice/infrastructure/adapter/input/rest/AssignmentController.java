@@ -1,5 +1,6 @@
 package com.panadi.ums.assignmentservice.infrastructure.adapter.input.rest;
 
+import com.panadi.ums.auditcommon.AuditOutbox;
 import com.panadi.ums.assignmentservice.application.PageResult;
 import com.panadi.ums.assignmentservice.application.command.AssignmentCommands.CreateAssignment;
 import com.panadi.ums.assignmentservice.application.command.AssignmentCommands.GradeSubmission;
@@ -30,7 +31,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -41,12 +44,14 @@ class AssignmentController {
     private final ActorTeacherClient teachers;
     private final ActorStudentClient students;
     private final ActorRosterClient rosters;
+    private final AuditOutbox audit;
 
-    AssignmentController(AssignmentUseCase useCase, ActorTeacherClient teachers, ActorStudentClient students, ActorRosterClient rosters) {
+    AssignmentController(AssignmentUseCase useCase, ActorTeacherClient teachers, ActorStudentClient students, ActorRosterClient rosters, AuditOutbox audit) {
         this.useCase = useCase;
         this.teachers = teachers;
         this.students = students;
         this.rosters = rosters;
+        this.audit = audit;
     }
 
     @PostMapping
@@ -61,6 +66,7 @@ class AssignmentController {
     AssignmentResponse get(@PathVariable UUID id) {
         Assignment value = useCase.getAssignment(id);
         requireAssignmentAccess(value);
+        requirePublishedForStudent(value);
         return toResponse(value);
     }
 
@@ -68,6 +74,7 @@ class AssignmentController {
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
     PageResponse<AssignmentResponse> list(@RequestParam(required = false) UUID sectionId, @RequestParam(required = false) AssignmentStatus status, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         requireSectionAccess(sectionId);
+        if (CurrentActor.required().hasRole("STUDENT")) status = AssignmentStatus.PUBLISHED;
         return toPage(useCase.listAssignments(sectionId, status, page, size), this::toResponse);
     }
 
@@ -76,6 +83,7 @@ class AssignmentController {
     PageResponse<AssignmentResponse> listMine(@RequestParam UUID sectionId, @RequestParam(required = false) AssignmentStatus status,
                                               @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
         requireSectionAccess(sectionId);
+        if (CurrentActor.required().hasRole("STUDENT")) status = AssignmentStatus.PUBLISHED;
         return toPage(useCase.listAssignments(sectionId, status, page, size), this::toResponse);
     }
 
@@ -141,8 +149,13 @@ class AssignmentController {
 
     @PatchMapping("/submissions/{id}/release-grade")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @Transactional
     SubmissionResponse releaseGrade(@PathVariable UUID id, @Valid @RequestBody TeacherActionRequest request) {
-        return toPublicResponse(useCase.releaseGrade(id, actingTeacher(request.teacherId())));
+        UUID teacherId = actingTeacher(request.teacherId());
+        Submission submission = useCase.releaseGrade(id, teacherId);
+        audit.record("GradeReleased", "assignment-service", "Submission", submission.id(), teacherId,
+                Map.of("assignmentId", submission.assignmentId(), "studentId", submission.studentId()));
+        return toPublicResponse(submission);
     }
 
     private UUID actingTeacher(UUID adminSuppliedId) {
@@ -182,6 +195,12 @@ class AssignmentController {
         if (actor.hasRole("TEACHER") && assignment.teacherId().equals(teachers.byUser(actor.userId()).id())) return;
         if (actor.hasRole("STUDENT") && rosters.roster(assignment.sectionId()).studentIds().contains(students.byUser(actor.userId()).id())) return;
         throw new AccessDeniedException("Assignment does not belong to the authenticated user");
+    }
+
+    private void requirePublishedForStudent(Assignment assignment) {
+        if (CurrentActor.required().hasRole("STUDENT") && assignment.status() != AssignmentStatus.PUBLISHED) {
+            throw new AccessDeniedException("Assignment is not published");
+        }
     }
 
     private void requireSubmissionAccess(Submission submission) {

@@ -20,7 +20,11 @@ Configuration is served centrally by `config-server`. PostgreSQL runs as one loc
 
 Business services follow a domain, application, and infrastructure separation. Cross-service relationships are stored as IDs and resolved through service APIs. Internal endpoints are reserved for service-to-service calls and are not exposed in public API documentation or through the gateway.
 
+`/internal/academic` is the Academic Service's read-only service contract. Student, enrollment, attendance, and assignment services use it to validate programs, enrollment eligibility, section ownership, and assignments without accessing the Academic Service database. Browser clients use only gateway-routed public APIs; `/teachers/me` and `/students/me` resolve the caller's profile from the JWT subject.
+
 Keycloak owns credentials, sessions, roles, and token issuance. Business services own university-domain profiles and records. A student or teacher profile is linked to a Keycloak subject, and browser clients do not submit profile identifiers to establish their own identity.
+
+Identity provisioning generates immutable student/teacher codes, usernames, and university email addresses in the identity service. Administrators provide a personal contact email for the Keycloak verification/password-setup invitation; they never provide or see an initial password. Academic catalog and enrollment records use deactivation/cancellation rather than hard deletion to retain historical integrity.
 
 ## Local infrastructure
 

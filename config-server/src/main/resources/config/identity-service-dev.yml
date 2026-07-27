@@ -27,6 +27,9 @@ springdoc:
   paths-to-exclude: /internal/**
 
 ums:
+  audit:
+    outbox:
+      enabled: ${AUDIT_OUTBOX_ENABLED:false}
   security:
     audience: ums-api
     internal:
@@ -48,4 +51,20 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 20s
+        permitted-number-of-calls-in-half-open-state: 3

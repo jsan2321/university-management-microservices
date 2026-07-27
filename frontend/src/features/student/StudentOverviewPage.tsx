@@ -24,6 +24,49 @@ export function StudentOverviewPage() {
       return { profile, enrollments: records.content };
     },
   });
+  const upcomingQuery = useQuery({
+    queryKey: ["student", "upcoming-work", query.data?.enrollments],
+    enabled: Boolean(query.data),
+    queryFn: async () => {
+      const activeEnrollments = query.data!.enrollments;
+      const contexts = activeEnrollments.flatMap((enrollment) =>
+        enrollment.details.map((detail) => ({
+          sectionId: detail.sectionId,
+          label: `${detail.subject.code} — ${detail.subject.name} · ${detail.section.sectionCode}`,
+        })),
+      );
+      const workBySection = session?.demo
+        ? contexts.map((context) => ({
+            context,
+            content: assignments.filter(
+              (assignment) => assignment.sectionId === context.sectionId,
+            ),
+          }))
+        : await Promise.all(
+            contexts.map(async (context) => ({
+              context,
+              content: (
+                await api.assignments(
+                  context.sectionId,
+                  0,
+                  100,
+                  "PUBLISHED",
+                  true,
+                )
+              ).content,
+            })),
+          );
+      const now = new Date();
+      return workBySection
+        .flatMap(({ context, content }) =>
+          content.map((assignment) => ({ ...assignment, sectionLabel: context.label })),
+        )
+        .filter((assignment) => new Date(assignment.dueAt) > now)
+        .sort((left, right) =>
+          new Date(left.dueAt).getTime() - new Date(right.dueAt).getTime(),
+        );
+    },
+  });
   if (query.isPending) return <LoadingState />;
   if (query.error)
     return (
@@ -72,19 +115,34 @@ export function StudentOverviewPage() {
         title="Upcoming work"
         description="Published assignments ordered by due date"
       >
-        <ul className={styles.taskList}>
-          {assignments.map((item) => (
-            <li key={item.id}>
-              <div>
-                <strong>{item.title}</strong>
-                <span>Due {new Date(item.dueAt).toLocaleString()}</span>
-              </div>
-              <Link className={styles.link} to="/student/assignments">
-                View assignment <ArrowRight size={15} />
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {upcomingQuery.isPending ? (
+          <LoadingState label="Loading upcoming work…" />
+        ) : upcomingQuery.error ? (
+          <ErrorState
+            error={upcomingQuery.error}
+            retry={() => void upcomingQuery.refetch()}
+          />
+        ) : upcomingQuery.data?.length ? (
+          <ul className={styles.taskList}>
+            {upcomingQuery.data.map((item) => (
+              <li key={item.id}>
+                <div>
+                  <strong>{item.title}</strong>
+                  <span>{item.sectionLabel}</span>
+                  <span>Due {new Date(item.dueAt).toLocaleString()}</span>
+                </div>
+                <Link
+                  className={styles.link}
+                  to={`/student/assignments?sectionId=${item.sectionId}`}
+                >
+                  View assignment <ArrowRight size={15} />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No upcoming published work.</p>
+        )}
       </Panel>
     </>
   );

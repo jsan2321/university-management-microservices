@@ -1,0 +1,79 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: student-service
+              uri: lb://student-service
+              predicates:
+                - Path=/student-service/**
+              filters:
+                - StripPrefix=1
+            - id: academic-service
+              uri: lb://academic-service
+              predicates:
+                - Path=/academic-service/**
+              filters:
+                - StripPrefix=1
+            - id: enrollment-service
+              uri: lb://enrollment-service
+              predicates:
+                - Path=/enrollment-service/**
+              filters:
+                - StripPrefix=1
+            - id: attendance-service
+              uri: lb://attendance-service
+              predicates:
+                - Path=/attendance-service/**
+              filters:
+                - StripPrefix=1
+            - id: assignment-service
+              uri: lb://assignment-service
+              predicates:
+                - Path=/assignment-service/**
+              filters:
+                - StripPrefix=1
+            - id: identity-service
+              uri: lb://identity-service
+              predicates:
+                - Path=/identity-service/**
+              filters:
+                - StripPrefix=1
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 20
+            redis-rate-limiter.burstCapacity: 40
+            redis-rate-limiter.requestedTokens: 1
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: true
+    service-url:
+      defaultZone: http://discovery-server:8761/eureka
+
+ums:
+  frontend:
+    allowed-origins: ${FRONTEND_ALLOWED_ORIGINS}
+
+logging:
+  level:
+    root: WARN
+    com.panadi.ums: INFO
+    org.springframework.cloud.gateway: INFO

@@ -5,3 +5,4 @@ CREATE DATABASE attendance_db;
 CREATE DATABASE assignment_db;
 CREATE DATABASE keycloak_db;
 CREATE DATABASE identity_db;
+CREATE DATABASE audit_db;

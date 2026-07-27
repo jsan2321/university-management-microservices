@@ -2,7 +2,10 @@ import Keycloak from "keycloak-js";
 import { roleFromClaims, type Session } from "./session";
 import type { Role } from "../api/generated/contracts";
 
-const demoEnabled = import.meta.env.VITE_DEMO_MODE === "true";
+// Demo mode is only available during local development (import.meta.env.DEV is
+// always false in production builds — tree-shaken out at compile time).
+// Setting VITE_DEMO_MODE=true in a production .env has no effect.
+const demoEnabled = import.meta.env.DEV && import.meta.env.VITE_DEMO_MODE === "true";
 const demoNames: Record<Role, string> = {
   ADMIN: "Elena Morales",
   TEACHER: "Marcus Lee",

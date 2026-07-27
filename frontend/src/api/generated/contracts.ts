@@ -99,16 +99,37 @@ export interface Section extends AuditFields {
   schedules: Schedule[];
   status: RecordStatus;
 }
+export interface TeacherSection {
+  id: string;
+  sectionCode: string;
+  capacity: number;
+  schedules: Schedule[];
+  status: RecordStatus;
+  subject: Pick<Subject, "id" | "code" | "name">;
+  semester: Pick<Semester, "id" | "name">;
+}
 export interface EnrollmentDetail {
   id: string;
   sectionId: string;
   subjectId: string;
   credits: number;
+  section: EnrollmentSectionSummary;
+  subject: EnrollmentSubjectSummary;
+}
+export interface EnrollmentSectionSummary {
+  id: string;
+  sectionCode: string;
+}
+export interface EnrollmentSubjectSummary {
+  id: string;
+  code: string;
+  name: string;
 }
 export interface Enrollment extends AuditFields {
   id: string;
   studentId: string;
   semesterId: string;
+  semester: Pick<Semester, "id" | "name">;
   status: RecordStatus;
   totalCredits: number;
   details: EnrollmentDetail[];
@@ -116,7 +137,13 @@ export interface Enrollment extends AuditFields {
 }
 export interface SectionStudents {
   sectionId: string;
-  studentIds: string[];
+  students: RosterStudent[];
+}
+export interface RosterStudent {
+  studentId: string;
+  studentCode: string;
+  firstName: string;
+  lastName: string;
 }
 export interface AttendanceSession extends AuditFields {
   id: string;
@@ -173,4 +200,7 @@ export interface ProvisioningResponse {
   profileId: string;
   role: Role;
   status: string;
+  academicCode?: string;
+  username?: string;
+  universityEmail?: string;
 }

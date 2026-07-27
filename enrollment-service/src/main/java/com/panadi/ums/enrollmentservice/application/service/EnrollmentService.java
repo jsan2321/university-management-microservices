@@ -89,6 +89,28 @@ public class EnrollmentService implements EnrollmentUseCase {
         return enrollments.saveEnrollment(getEnrollment(id).cancel());
     }
 
+    @Override
+    public Enrollment addSection(UUID enrollmentId, UUID sectionId) {
+        Enrollment current = getEnrollment(enrollmentId);
+        StudentLookupPort.StudentSnapshot student = students.getStudent(current.studentId());
+        if (!student.isActive()) throw new ApplicationException("Student is not active");
+        SectionSnapshot section = academic.getSection(sectionId);
+        SubjectSnapshot subject = academic.getSubject(section.subjectId());
+        validateAcademicSnapshots(current.semesterId(), student.programId(), List.of(section), List.of(subject));
+        validateCapacity(List.of(section));
+        List<SectionSnapshot> selected = current.details().stream().map(detail -> academic.getSection(detail.sectionId())).toList();
+        selected = new ArrayList<>(selected); selected.add(section);
+        validateSchedules(selected);
+        Enrollment updated = current.add(EnrollmentDetail.create(section.id(), subject.id(), subject.credits()));
+        if (updated.totalCredits() > MAX_CREDITS) throw new ApplicationException("Enrollment exceeds maximum semester credits");
+        return enrollments.saveEnrollment(updated);
+    }
+
+    @Override
+    public Enrollment dropSection(UUID enrollmentId, UUID sectionId) {
+        return enrollments.saveEnrollment(getEnrollment(enrollmentId).drop(sectionId));
+    }
+
     private void requireSectionIds(List<UUID> sectionIds) {
         if (sectionIds == null || sectionIds.isEmpty()) {
             throw new ApplicationException("At least one section is required");

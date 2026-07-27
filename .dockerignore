@@ -1,0 +1,31 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+*.iml
+.run
+
+# Build output
+**/target/
+**/dist/
+**/node_modules/
+
+# Documentation
+docs/
+.private-docs/
+.agents/
+README.md
+
+# Environment files (secrets)
+.env
+.env.prod
+
+# Docker compose files (not needed inside images)
+compose.dev.yml
+compose.prod.yml
+
+# Gemini / AI
+.gemini/

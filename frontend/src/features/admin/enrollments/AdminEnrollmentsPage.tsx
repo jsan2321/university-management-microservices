@@ -23,6 +23,7 @@ import {
   sections,
   semesters,
   students,
+  subjects,
 } from "../../../test/fixtures";
 export function AdminEnrollmentsPage() {
   const [open, setOpen] = useState(false);
@@ -33,6 +34,13 @@ export function AdminEnrollmentsPage() {
     queryKey: ["admin", "enrollments"],
     queryFn: () =>
       session?.demo ? page(enrollments) : api.enrollments(0, 100),
+  });
+  const references = useQuery({
+    queryKey: ["admin", "enrollment-references"],
+    queryFn: async () => session?.demo ? { students, semesters } : {
+      students: (await api.students(0, 100)).content,
+      semesters: (await api.semesters(0, 100)).content,
+    },
   });
   const cancel = useMutation({
     mutationFn: (id: string) =>
@@ -85,11 +93,11 @@ export function AdminEnrollmentsPage() {
                 <tr key={item.id}>
                   <td>
                     <PrimaryCell
-                      title={studentName(item.studentId)}
-                      detail={item.studentId}
+                      title={studentName(item.studentId, references.data?.students)}
+                      detail={references.data?.students.find((student) => student.id === item.studentId)?.studentCode ?? "Student record"}
                     />
                   </td>
-                  <td>{semesterName(item.semesterId)}</td>
+                  <td>{semesterName(item.semesterId, references.data?.semesters)}</td>
                   <td>{item.details.length}</td>
                   <td>{item.totalCredits}</td>
                   <td>
@@ -115,12 +123,12 @@ export function AdminEnrollmentsPage() {
     </>
   );
 }
-function studentName(id: string) {
-  const value = students.find((item) => item.id === id);
+function studentName(id: string, values = students) {
+  const value = values.find((item) => item.id === id);
   return value ? `${value.firstName} ${value.lastName}` : id;
 }
-function semesterName(id: string) {
-  return semesters.find((item) => item.id === id)?.name ?? id;
+function semesterName(id: string, values = semesters) {
+  return values.find((item) => item.id === id)?.name ?? "Academic term";
 }
 function EnrollmentDialog({ onClose }: { onClose: () => void }) {
   const api = useServiceApi();
@@ -132,16 +140,18 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
   const refs = useQuery({
     queryKey: ["enrollment", "references"],
     queryFn: async () => {
-      if (session?.demo) return { students, semesters, sections };
-      const [s, sem, sec] = await Promise.all([
+      if (session?.demo) return { students, semesters, sections, subjects };
+      const [s, sem, sec, sub] = await Promise.all([
         api.students(0, 100, undefined, "ACTIVE"),
         api.semesters(0, 100, "ACTIVE"),
         api.sections(0, 100, { status: "ACTIVE" }),
+        api.subjects(0, 100, undefined, "ACTIVE"),
       ]);
       return {
         students: s.content,
         semesters: sem.content,
         sections: sec.content,
+        subjects: sub.content,
       };
     },
   });
@@ -200,6 +210,11 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
             <div>
               {refs.data?.sections
                 .filter((item) => !semesterId || item.semesterId === semesterId)
+                .filter((item) => {
+                  const selected = refs.data?.students.find((student) => student.id === studentId);
+                  const subject = refs.data?.subjects.find((value) => value.id === item.subjectId);
+                  return !selected || !subject || subject.programId === selected.programId;
+                })
                 .map((item) => (
                   <label
                     key={item.id}
@@ -216,8 +231,7 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
                         )
                       }
                     />
-                    {item.sectionCode} · {item.schedules[0]?.dayOfWeek}{" "}
-                    {item.schedules[0]?.startTime}
+                    {refs.data?.subjects.find((subject) => subject.id === item.subjectId)?.name ?? "Subject"} · {item.sectionCode} · {item.schedules[0]?.dayOfWeek}{" "}{item.schedules[0]?.startTime} · {item.capacity} seats
                   </label>
                 ))}
             </div>

@@ -37,12 +37,11 @@ class KeycloakAdminClient {
         this.clientSecret = clientSecret;
     }
 
-    UUID createDisabledUser(String username, String email, String firstName, String lastName, String temporaryPassword, String role) {
+    UUID createInvitationUser(String username, String contactEmail, String firstName, String lastName, String role) {
         try {
-            Map<String, Object> credential = Map.of("type", "password", "value", temporaryPassword, "temporary", true);
             Map<String, Object> representation = Map.of(
-                    "username", username, "email", email, "firstName", firstName, "lastName", lastName,
-                    "enabled", false, "emailVerified", false, "credentials", List.of(credential));
+                    "username", username, "email", contactEmail, "firstName", firstName, "lastName", lastName,
+                    "enabled", true, "emailVerified", false, "requiredActions", List.of("VERIFY_EMAIL", "UPDATE_PASSWORD"));
             URI location = restClient.post()
                     .uri(baseUrl + "/admin/realms/{realm}/users", realm)
                     .header(HttpHeaders.AUTHORIZATION, bearer())
@@ -55,6 +54,7 @@ class KeycloakAdminClient {
             UUID userId = UUID.fromString(location.getPath().substring(location.getPath().lastIndexOf('/') + 1));
             try {
                 assignRole(userId, role);
+                sendInvitation(userId);
             } catch (RuntimeException roleFailure) {
                 try { delete(userId); } catch (RuntimeException ignored) { }
                 throw roleFailure;
@@ -66,6 +66,12 @@ class KeycloakAdminClient {
             }
             throw new ProvisioningException("Keycloak user creation failed", exception);
         }
+    }
+
+    private void sendInvitation(UUID userId) {
+        restClient.put().uri(baseUrl + "/admin/realms/{realm}/users/{userId}/execute-actions-email", realm, userId)
+                .header(HttpHeaders.AUTHORIZATION, bearer()).contentType(MediaType.APPLICATION_JSON)
+                .body(List.of("VERIFY_EMAIL", "UPDATE_PASSWORD")).retrieve().toBodilessEntity();
     }
 
     void requireRole(UUID userId, String role) {

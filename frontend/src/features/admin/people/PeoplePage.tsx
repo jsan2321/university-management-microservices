@@ -37,15 +37,13 @@ import {
 const schema = z.object({
   firstName: z.string().min(2, "Enter a first name"),
   lastName: z.string().min(2, "Enter a last name"),
-  email: z.email("Enter a valid email"),
-  code: z.string().min(2, "Enter an academic code"),
+  contactEmail: z.email("Enter a valid personal email"),
   organizationId: z.string().min(1, "Choose an academic unit"),
   primaryDate: z.string().min(1, "Choose a date"),
   secondaryDate: z.string().optional(),
   phone: z.string().optional(),
   gender: z.string().optional(),
   address: z.string().optional(),
-  temporaryPassword: z.string().min(8, "Use at least 8 characters"),
 });
 type FormValues = z.infer<typeof schema>;
 export function PeoplePage() {
@@ -208,15 +206,13 @@ function ProvisionDialog({
     defaultValues: {
       firstName: "",
       lastName: "",
-      email: "",
-      code: "",
+      contactEmail: "",
       organizationId: "",
       primaryDate: "",
       secondaryDate: "",
       phone: "",
       gender: "",
       address: "",
-      temporaryPassword: "",
     },
   });
   const mutation = useMutation({
@@ -224,12 +220,9 @@ function ProvisionDialog({
       const body =
         kind === "student"
           ? {
-              username: value.email,
-              email: value.email,
+              contactEmail: value.contactEmail,
               firstName: value.firstName,
               lastName: value.lastName,
-              temporaryPassword: value.temporaryPassword,
-              studentCode: value.code,
               dateOfBirth: value.primaryDate,
               programId: value.organizationId,
               admissionDate: value.secondaryDate,
@@ -238,17 +231,14 @@ function ProvisionDialog({
               address: value.address || undefined,
             }
           : {
-              username: value.email,
-              email: value.email,
+              contactEmail: value.contactEmail,
               firstName: value.firstName,
               lastName: value.lastName,
-              temporaryPassword: value.temporaryPassword,
-              teacherCode: value.code,
               departmentId: value.organizationId,
               hireDate: value.primaryDate,
               phone: value.phone || undefined,
             };
-      if (session?.demo) return { profileId: "preview", status: "COMPLETED" };
+      if (session?.demo) return { profileId: "preview", status: "COMPLETED", academicCode: "generated", username: "generated", universityEmail: "generated@ums.local" };
       return kind === "student"
         ? api.provisionStudent(body, key.current)
         : api.provisionTeacher(body, key.current);
@@ -264,7 +254,7 @@ function ProvisionDialog({
       >
         <EmptyState
           title="Ready to sign in"
-          description="The profile is linked to the new Keycloak identity. No user ID needs to be copied."
+          description={`Code: ${mutation.data.academicCode ?? "generated"} · Username: ${mutation.data.username ?? "generated"} · University email: ${mutation.data.universityEmail ?? "generated"}. A password-set invitation was sent to the personal contact address.`}
           action={
             <Button onClick={onClose}>
               <UserCheck size={17} />
@@ -293,14 +283,8 @@ function ProvisionDialog({
           <Field label="Last name" error={errors.lastName?.message}>
             <input {...register("lastName")} />
           </Field>
-          <Field label="University email" error={errors.email?.message}>
-            <input type="email" {...register("email")} />
-          </Field>
-          <Field
-            label={kind === "student" ? "Student code" : "Teacher code"}
-            error={errors.code?.message}
-          >
-            <input {...register("code")} />
+          <Field label="Personal contact email" error={errors.contactEmail?.message}>
+            <input type="email" {...register("contactEmail")} />
           </Field>
           <Field
             label={kind === "student" ? "Program" : "Department"}
@@ -344,20 +328,9 @@ function ProvisionDialog({
               <input {...register("address")} />
             </Field>
           )}
-          <Field
-            label="Temporary password"
-            error={errors.temporaryPassword?.message}
-            className={uiStyles.span2}
-          >
-            <input
-              type="password"
-              autoComplete="new-password"
-              {...register("temporaryPassword")}
-            />
-          </Field>
         </div>
         <p style={{ marginTop: 15 }} className={uiStyles.muted}>
-          The user must change this temporary password at first sign-in.
+          The system creates the academic code, username, university email, and a secure password-set invitation.
         </p>
         {mutation.error && (
           <p className={uiStyles.errorText}>{mutation.error.message}</p>

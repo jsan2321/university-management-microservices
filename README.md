@@ -76,6 +76,18 @@ cp .env.example .env
 docker compose --env-file .env -f compose.dev.yml up -d
 ```
 
+To run the Kafka audit foundation, add the messaging profile. Set `AUDIT_OUTBOX_ENABLED=true` and `SPRING_KAFKA_BOOTSTRAP_SERVERS=localhost:9092` when starting audit-producing services.
+
+```sh
+docker compose --env-file .env -f compose.dev.yml --profile messaging up -d
+```
+
+For local metrics, traces, and logs, enable the observability profile too. Grafana is available at `http://localhost:3001`, Prometheus at `http://localhost:9090`, Tempo receives OTLP/HTTP traces on `http://localhost:4318`, and Loki listens on `http://localhost:3100`.
+
+```sh
+docker compose --env-file .env -f compose.dev.yml --profile observability up -d
+```
+
 On PowerShell, use `Copy-Item .env.example .env` instead of `cp`. The Compose file and imported Keycloak realm are explicitly for local development.
 
 ### 2. Start the backend

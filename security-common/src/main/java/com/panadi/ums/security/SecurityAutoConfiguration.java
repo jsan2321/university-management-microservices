@@ -1,6 +1,8 @@
 package com.panadi.ums.security;
 
 import feign.RequestInterceptor;
+import feign.Request;
+import feign.Retryer;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
@@ -35,11 +37,22 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @AutoConfiguration
 @EnableMethodSecurity
 public class SecurityAutoConfiguration {
     private static final String OPENAPI_BEARER_SCHEME = "bearerAuth";
+
+    @Bean
+    @ConditionalOnMissingBean(Request.Options.class)
+    Request.Options feignOptions() {
+        return new Request.Options(1, TimeUnit.SECONDS, 3, TimeUnit.SECONDS, true);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(Retryer.class)
+    Retryer feignRetryer() { return Retryer.NEVER_RETRY; }
 
     @Bean
     @ConditionalOnMissingBean(OpenAPI.class)
@@ -60,7 +73,7 @@ public class SecurityAutoConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/internal/**").hasAnyRole("INTERNAL", "PROVISIONER")
                         .anyRequest().authenticated())

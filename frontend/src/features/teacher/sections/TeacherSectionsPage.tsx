@@ -13,19 +13,15 @@ import {
   PrimaryCell,
   StatusBadge,
 } from "../../../components/ui";
-import { page, sections, teachers } from "../../../test/fixtures";
+import { teacherSections } from "../../../test/fixtures";
+import { teacherSectionLabel } from "../teacher-section";
 import styles from "../../feature.module.css";
 export function TeacherSectionsPage() {
   const api = useServiceApi();
   const { session } = useAuth();
   const query = useQuery({
     queryKey: ["teacher", "sections"],
-    queryFn: async () => {
-      const teacher = session?.demo ? teachers[0] : await api.teacherMe();
-      return session?.demo
-        ? page(sections)
-        : api.sections(0, 100, { teacherId: teacher.id });
-    },
+    queryFn: async () => session?.demo ? teacherSections : api.teacherSections(),
   });
   return (
     <>
@@ -38,7 +34,7 @@ export function TeacherSectionsPage() {
         <LoadingState />
       ) : query.error ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />
-      ) : query.data.content.length === 0 ? (
+      ) : query.data.length === 0 ? (
         <EmptyState
           title="No sections assigned"
           description="Sections assigned to your teacher profile will appear here."
@@ -46,7 +42,7 @@ export function TeacherSectionsPage() {
       ) : (
         <Panel
           title="Assigned sections"
-          description={`${query.data.totalElements} sections`}
+          description={`${query.data.length} sections`}
         >
           <DataTable>
             <thead>
@@ -61,16 +57,12 @@ export function TeacherSectionsPage() {
               </tr>
             </thead>
             <tbody>
-              {query.data.content.map((section) => (
+              {query.data.map((section) => (
                 <tr key={section.id}>
                   <td>
                     <PrimaryCell
-                      title={
-                        <span className={styles.sectionCode}>
-                          {section.sectionCode}
-                        </span>
-                      }
-                      detail="Current semester"
+                      title={teacherSectionLabel(section)}
+                      detail={section.semester.name}
                     />
                   </td>
                   <td>
