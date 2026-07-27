@@ -5,6 +5,7 @@ import com.panadi.ums.identityservice.ProvisioningDtos.LinkExistingRequest;
 import com.panadi.ums.identityservice.ProvisioningDtos.ProvisionStudentRequest;
 import com.panadi.ums.identityservice.ProvisioningDtos.ProvisionTeacherRequest;
 import com.panadi.ums.identityservice.ProvisioningDtos.ProvisioningResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +22,7 @@ class ProvisioningService {
     private final IdentityGenerator identities;
     private final AuditOutbox audit;
 
+    @Autowired
     ProvisioningService(ProvisioningRepository records, KeycloakAdminClient keycloak,
                         TeacherProfileClient teachers, StudentProfileClient students, IdentityGenerator identities, AuditOutbox audit) {
         this.records = records;
