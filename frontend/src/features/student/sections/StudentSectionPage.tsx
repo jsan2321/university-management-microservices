@@ -40,7 +40,7 @@ export function StudentSectionPage() {
         api.section(sectionId),
         api.myAttendance(sectionId),
         api.assignments(sectionId, 0, 100, "PUBLISHED", true),
-        api.myEnrollments(0, 100, undefined, "ACTIVE"),
+        api.myEnrollments(0, 100),
       ]);
       const enrollment = records.content
         .flatMap((item) => item.details)

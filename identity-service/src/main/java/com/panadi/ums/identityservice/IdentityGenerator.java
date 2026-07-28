@@ -20,16 +20,35 @@ class IdentityGenerator {
     }
 
     @Transactional
-    synchronized IdentityBundle next(String role) {
+    synchronized IdentityBundle next(String role, String firstName, String lastName) {
         int year = Year.now().getValue();
         String prefix = "STUDENT".equals(role) ? "STU" : "TCH";
-        String key = prefix + "-" + year;
-        IdentifierSequence sequence = sequences.findById(key).orElseGet(() -> { IdentifierSequence value = new IdentifierSequence(); value.sequenceKey = key; value.nextValue = 0; return value; });
+        
+        // 1. Generate Academic Code
+        String codeKey = prefix + "-" + year;
+        IdentifierSequence sequence = sequences.findById(codeKey).orElseGet(() -> { IdentifierSequence value = new IdentifierSequence(); value.sequenceKey = codeKey; value.nextValue = 0; return value; });
         sequence.nextValue++;
         sequences.save(sequence);
         String code = "%s-%d-%0" + width + "d";
         code = String.format(Locale.ROOT, code, prefix, year, sequence.nextValue);
-        String username = code.toLowerCase(Locale.ROOT).replace("-", "");
+
+        // 2. Generate friendly Username
+        String rolePrefix = "STUDENT".equals(role) ? "s." : "t.";
+        String cleanFirstName = firstName.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
+        String cleanLastName = lastName.toLowerCase(Locale.ROOT).replaceAll("[^a-z]", "");
+        String baseName = rolePrefix + cleanFirstName + "." + cleanLastName;
+
+        IdentifierSequence nameSeq = sequences.findById(baseName).orElseGet(() -> { IdentifierSequence value = new IdentifierSequence(); value.sequenceKey = baseName; value.nextValue = 0; return value; });
+        String username;
+        if (nameSeq.nextValue == 0) {
+            username = baseName;
+            nameSeq.nextValue++;
+        } else {
+            username = baseName + nameSeq.nextValue;
+            nameSeq.nextValue++;
+        }
+        sequences.save(nameSeq);
+
         return new IdentityBundle(code, username, username + "@" + domain);
     }
 

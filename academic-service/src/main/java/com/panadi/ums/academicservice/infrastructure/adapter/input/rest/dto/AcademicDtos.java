@@ -47,7 +47,7 @@ public final class AcademicDtos {
     public record SemesterRequest(@NotBlank String name, @NotNull LocalDate startDate, @FutureOrPresent @NotNull LocalDate endDate) {
     }
 
-    public record SemesterResponse(UUID id, String name, LocalDate startDate, LocalDate endDate, SemesterStatus status, LocalDateTime createdAt, LocalDateTime updatedAt) {
+    public record SemesterResponse(UUID id, String name, LocalDate startDate, LocalDate endDate, SemesterStatus status, boolean isRegistrationOpen, LocalDateTime createdAt, LocalDateTime updatedAt) {
     }
 
     public record SubjectRequest(@NotNull UUID programId, @NotBlank String code, @NotBlank String name, String description, @Min(1) @Max(10) int credits, @Min(0) Integer minimumCreditsRequired, Set<UUID> prerequisiteSubjectIds) {

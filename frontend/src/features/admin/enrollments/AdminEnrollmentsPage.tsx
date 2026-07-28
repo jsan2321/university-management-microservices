@@ -105,12 +105,14 @@ export function AdminEnrollmentsPage() {
                   </td>
                   <td>
                     {item.status === "ACTIVE" && (
-                      <Button
-                        variant="danger"
-                        onClick={() => cancel.mutate(item.id)}
-                      >
-                        Cancel
-                      </Button>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <Button
+                          variant="danger"
+                          onClick={() => cancel.mutate(item.id)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -165,6 +167,14 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
       onClose();
     },
   });
+
+  const selectedSections = refs.data?.sections.filter(sec => sectionIds.includes(sec.id)) || [];
+  const selectedSubjects = selectedSections.map(sec => sec.subjectId);
+  const totalCredits = selectedSections.reduce((acc, sec) => {
+    const subject = refs.data?.subjects.find(sub => sub.id === sec.subjectId);
+    return acc + (subject?.credits || 0);
+  }, 0);
+
   return (
     <Dialog
       title="Create enrollment"
@@ -207,33 +217,56 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
             </select>
           </Field>
           <Field label="Sections" className={uiStyles.span2}>
-            <div>
-              {refs.data?.sections
-                .filter((item) => !semesterId || item.semesterId === semesterId)
-                .filter((item) => {
-                  const selected = refs.data?.students.find((student) => student.id === studentId);
-                  const subject = refs.data?.subjects.find((value) => value.id === item.subjectId);
-                  return !selected || !subject || subject.programId === selected.programId;
-                })
-                .map((item) => (
-                  <label
-                    key={item.id}
-                    style={{ display: "flex", gap: 8, padding: "7px 0" }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={sectionIds.includes(item.id)}
-                      onChange={(event) =>
-                        setSectionIds((current) =>
-                          event.target.checked
-                            ? [...current, item.id]
-                            : current.filter((id) => id !== item.id),
-                        )
-                      }
-                    />
-                    {refs.data?.subjects.find((subject) => subject.id === item.subjectId)?.name ?? "Subject"} · {item.sectionCode} · {item.schedules[0]?.dayOfWeek}{" "}{item.schedules[0]?.startTime} · {item.capacity} seats
-                  </label>
-                ))}
+            {refs.data?.sections && (
+              <div className={uiStyles.sectionGrid}>
+                {refs.data.sections
+                  .filter((item) => !semesterId || item.semesterId === semesterId)
+                  .filter((item) => {
+                    const selected = refs.data?.students.find((student) => student.id === studentId);
+                    const subject = refs.data?.subjects.find((value) => value.id === item.subjectId);
+                    return !selected || !subject || subject.programId === selected.programId;
+                  })
+                  .map((item) => {
+                    const subject = refs.data?.subjects.find((subject) => subject.id === item.subjectId);
+                    const isSelected = sectionIds.includes(item.id);
+                    const isDuplicateSubject = !isSelected && selectedSubjects.includes(item.subjectId);
+                    const isCreditsExceeded = !isSelected && totalCredits + (subject?.credits || 0) > 22;
+                    const isDisabled = isDuplicateSubject || isCreditsExceeded;
+
+                    return (
+                      <label
+                        key={item.id}
+                        className={`${uiStyles.sectionCard} ${isSelected ? uiStyles.sectionCardSelected : ""} ${isDisabled ? uiStyles.sectionCardDisabled : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={isDisabled}
+                          onChange={(event) =>
+                            setSectionIds((current) =>
+                              event.target.checked
+                                ? [...current, item.id]
+                                : current.filter((id) => id !== item.id),
+                            )
+                          }
+                        />
+                        <div className={uiStyles.sectionCardHeader}>
+                          <strong>{subject?.name ?? "Subject"} · {item.sectionCode}</strong>
+                          <span className={`${uiStyles.sectionBadge} ${uiStyles.badgeSubject}`}>{subject?.credits || 0} CR</span>
+                        </div>
+                        <div className={uiStyles.sectionCardDetails}>
+                          <span>🗓️ {item.schedules[0]?.dayOfWeek} {item.schedules[0]?.startTime}</span>
+                          <span>🪑 {item.capacity} seats limit</span>
+                          {isDuplicateSubject && <span style={{color: 'var(--red-650)'}}>Subject already selected</span>}
+                        </div>
+                      </label>
+                    );
+                  })}
+              </div>
+            )}
+            
+            <div className={`${uiStyles.creditsCounter} ${totalCredits > 22 ? uiStyles.creditsExceeded : ""}`}>
+              <span>Selected Credits: <strong>{totalCredits}</strong> / 22 max</span>
             </div>
           </Field>
         </div>

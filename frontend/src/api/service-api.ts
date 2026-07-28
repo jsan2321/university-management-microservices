@@ -175,6 +175,7 @@ export function createServiceApi(getToken: TokenProvider) {
         status: string;
       }> = {},
     ) => list<Enrollment>(enrollment, { page, size, ...filters }),
+    enrollment: (id: string) => client.get<Enrollment>(`${enrollment}/${id}`),
     myEnrollments: (
       page = 0,
       size = 20,
@@ -193,6 +194,8 @@ export function createServiceApi(getToken: TokenProvider) {
       client.send<Enrollment>(`${enrollment}/${id}/sections`, "POST", { sectionId }),
     dropEnrollmentSection: (id: string, sectionId: string) =>
       statusAction<Enrollment>(`${enrollment}/${id}/sections`, sectionId, "drop"),
+    toggleSemesterRegistration: (id: string, open: boolean) =>
+      client.send<Semester>(`${academic}/semesters/${id}/toggle-registration?open=${open}`, "PATCH"),
     sectionStudents: (sectionId: string) =>
       client.get<SectionStudents>(
         `${attendance}/sections/${sectionId}/students`,

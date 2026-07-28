@@ -5,6 +5,12 @@
   "resetPasswordAllowed": true,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
+  "smtpServer": {
+    "host": "mailhog",
+    "port": "1025",
+    "from": "no-reply@ums.local",
+    "fromDisplayName": "University Management System"
+  },
   "roles": {
     "realm": [
       {

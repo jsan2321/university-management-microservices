@@ -195,7 +195,7 @@ class EnrollmentServiceTests {
     }
 
     private SemesterSnapshot semester(String status) {
-        return new SemesterSnapshot(semesterId, "Semester 2026", status);
+        return new SemesterSnapshot(semesterId, "Semester 2026", status, true);
     }
 
     private SectionSnapshot section(UUID id, UUID subjectId, String status, int capacity, ScheduleSnapshot schedule) {

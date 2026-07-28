@@ -22,31 +22,31 @@ class ProvisioningService {
     private final IdentityGenerator identities;
     private final AuditOutbox audit;
 
+    private final EmailService emailService;
+
     @Autowired
     ProvisioningService(ProvisioningRepository records, KeycloakAdminClient keycloak,
-                        TeacherProfileClient teachers, StudentProfileClient students, IdentityGenerator identities, AuditOutbox audit) {
+                        TeacherProfileClient teachers, StudentProfileClient students, IdentityGenerator identities, AuditOutbox audit,
+                        EmailService emailService) {
         this.records = records;
         this.keycloak = keycloak;
         this.teachers = teachers;
         this.students = students;
         this.identities = identities;
         this.audit = audit;
+        this.emailService = emailService;
     }
 
-    ProvisioningService(ProvisioningRepository records, KeycloakAdminClient keycloak,
-                        TeacherProfileClient teachers, StudentProfileClient students, IdentityGenerator identities) {
-        this(records, keycloak, teachers, students, identities, null);
-    }
 
     ProvisioningResponse provisionTeacher(String key, ProvisionTeacherRequest request) {
-        IdentityGenerator.IdentityBundle identity = identities.next("TEACHER");
+        IdentityGenerator.IdentityBundle identity = identities.next("TEACHER", request.firstName(), request.lastName());
         return provision(key, "TEACHER", identity, request.contactEmail(), request.firstName(), request.lastName(), userId -> teachers.create(new TeacherProfileRequest(
                         request.departmentId(), userId, identity.code(), request.firstName(), request.lastName(),
                         identity.universityEmail(), request.phone(), request.hireDate())));
     }
 
     ProvisioningResponse provisionStudent(String key, ProvisionStudentRequest request) {
-        IdentityGenerator.IdentityBundle identity = identities.next("STUDENT");
+        IdentityGenerator.IdentityBundle identity = identities.next("STUDENT", request.firstName(), request.lastName());
         return provision(key, "STUDENT", identity, request.contactEmail(), request.firstName(), request.lastName(), userId -> students.create(new StudentProfileRequest(
                         userId, identity.code(), request.firstName(), request.lastName(), request.gender(),
                         request.dateOfBirth(), identity.universityEmail(), request.phone(), request.address(), request.programId(),
@@ -77,7 +77,8 @@ class ProvisioningService {
         UUID userId = null;
         UUID profileId = null;
         try {
-            userId = keycloak.createInvitationUser(identity.username(), contactEmail, firstName, lastName, role);
+            String temporaryPassword = UUID.randomUUID().toString().substring(0, 8);
+            userId = keycloak.createProvisionedUser(identity.username(), identity.universityEmail(), firstName, lastName, role, temporaryPassword);
             record.update("KEYCLOAK_CREATED", userId, null, null);
             records.save(record);
             ProfileResponse profile = creator.create(userId);
@@ -86,10 +87,11 @@ class ProvisioningService {
             records.save(record);
             record.update("COMPLETED", userId, profileId, null);
             ProvisioningRecord completed = records.save(record);
-            if (audit != null) {
-                audit.record(role.equals("STUDENT") ? "StudentProvisioned" : "TeacherProvisioned", "identity-service",
-                        role, profileId, userId, Map.of("userId", userId, "profileId", profileId));
-            }
+            audit.record(role.equals("STUDENT") ? "StudentProvisioned" : "TeacherProvisioned", "identity-service",
+                    role, profileId, userId, Map.of("userId", userId, "profileId", profileId));
+            
+            emailService.sendWelcomeEmail(contactEmail, firstName, identity.universityEmail(), temporaryPassword);
+            
             return response(completed, identity);
         } catch (RuntimeException exception) {
             compensate(record, userId, profileId, exception);

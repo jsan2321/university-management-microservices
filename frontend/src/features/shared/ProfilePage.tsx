@@ -49,7 +49,7 @@ export function ProfilePage() {
             <h2>
               {profile.firstName} {profile.lastName}
             </h2>
-            <p>{code}</p>
+            <p>{session?.username}</p>
             <StatusBadge value={profile.status} />
           </div>
         </Panel>

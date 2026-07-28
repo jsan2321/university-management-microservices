@@ -3,6 +3,7 @@ import type { RouteObject } from "react-router-dom";
 import { RequireRole } from "../auth/RequireRole";
 import { StudentOverviewPage } from "../features/student/StudentOverviewPage";
 import { StudentEnrollmentsPage } from "../features/student/enrollments/StudentEnrollmentsPage";
+import { StudentEnrollmentDetailsPage } from "../features/student/enrollments/StudentEnrollmentDetailsPage";
 import { StudentSectionPage } from "../features/student/sections/StudentSectionPage";
 import { AssignmentsPage } from "../features/shared/AssignmentsPage";
 import { ProfilePage } from "../features/shared/ProfilePage";
@@ -12,6 +13,7 @@ const student = (element: ReactNode) => (
 export const studentRoutes: RouteObject[] = [
   { path: "student/overview", element: student(<StudentOverviewPage />) },
   { path: "student/enrollments", element: student(<StudentEnrollmentsPage />) },
+  { path: "student/enrollments/:id", element: student(<StudentEnrollmentDetailsPage />) },
   {
     path: "student/sections/:sectionId",
     element: student(<StudentSectionPage />),

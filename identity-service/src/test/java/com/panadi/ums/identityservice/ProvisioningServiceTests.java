@@ -26,7 +26,7 @@ class ProvisioningServiceTests {
         TeacherProfileClient teachers = mock(TeacherProfileClient.class);
         UUID userId = UUID.randomUUID();
         UUID profileId = UUID.randomUUID();
-        when(keycloak.createInvitationUser(any(), any(), any(), any(), any())).thenReturn(userId);
+        when(keycloak.createProvisionedUser(any(), any(), any(), any(), any(), any())).thenReturn(userId);
         when(teachers.create(any())).thenReturn(new ProfileResponse(profileId, userId));
 
         var response = service(records, keycloak, teachers).provisionTeacher("request-1", request);
@@ -44,7 +44,7 @@ class ProvisioningServiceTests {
         KeycloakAdminClient keycloak = mock(KeycloakAdminClient.class);
         TeacherProfileClient teachers = mock(TeacherProfileClient.class);
         UUID userId = UUID.randomUUID();
-        when(keycloak.createInvitationUser(any(), any(), any(), any(), any())).thenReturn(userId);
+        when(keycloak.createProvisionedUser(any(), any(), any(), any(), any(), any())).thenReturn(userId);
         when(teachers.create(any())).thenThrow(new RuntimeException("profile conflict"));
 
         assertThatThrownBy(() -> service(records, keycloak, teachers).provisionTeacher("request-2", request))
@@ -64,7 +64,7 @@ class ProvisioningServiceTests {
         var response = service(records, keycloak, mock(TeacherProfileClient.class)).provisionTeacher("same-key", request);
 
         assertThat(response.status()).isEqualTo("COMPLETED");
-        verify(keycloak, never()).createInvitationUser(any(), any(), any(), any(), any());
+        verify(keycloak, never()).createProvisionedUser(any(), any(), any(), any(), any(), any());
     }
 
     private ProvisioningRepository repository() {
@@ -76,7 +76,7 @@ class ProvisioningServiceTests {
 
     private ProvisioningService service(ProvisioningRepository records, KeycloakAdminClient keycloak, TeacherProfileClient teachers) {
         IdentityGenerator identities = mock(IdentityGenerator.class);
-        when(identities.next(any())).thenReturn(new IdentityGenerator.IdentityBundle("TCH-2026-00001", "tch202600001", "tch202600001@ums.local"));
-        return new ProvisioningService(records, keycloak, teachers, mock(StudentProfileClient.class), identities);
+        when(identities.next(any(), any(), any())).thenReturn(new IdentityGenerator.IdentityBundle("TCH-2026-00001", "tch202600001", "tch202600001@ums.local"));
+        return new ProvisioningService(records, keycloak, teachers, mock(StudentProfileClient.class), identities, mock(com.panadi.ums.auditcommon.AuditOutbox.class), mock(EmailService.class));
     }
 }

@@ -16,7 +16,7 @@ public final class EnrollmentDtos {
     }
     public record AddSectionRequest(@NotNull UUID sectionId) {}
 
-    public record EnrollmentResponse(UUID id, UUID studentId, UUID semesterId, SemesterSummaryResponse semester, EnrollmentStatus status, int totalCredits, List<EnrollmentDetailResponse> details, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime cancelledAt) {
+    public record EnrollmentResponse(UUID id, UUID studentId, UUID semesterId, SemesterSummaryResponse semester, EnrollmentStatus status, int totalCredits, List<EnrollmentDetailResponse> details, boolean isRegistrationOpen, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime cancelledAt) {
     }
 
     public record EnrollmentDetailResponse(UUID id, UUID sectionId, UUID subjectId, int credits, SectionSummaryResponse section, SubjectSummaryResponse subject) {

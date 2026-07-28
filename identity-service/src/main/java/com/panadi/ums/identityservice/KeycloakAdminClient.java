@@ -37,11 +37,13 @@ class KeycloakAdminClient {
         this.clientSecret = clientSecret;
     }
 
-    UUID createInvitationUser(String username, String contactEmail, String firstName, String lastName, String role) {
+    UUID createProvisionedUser(String username, String universityEmail, String firstName, String lastName, String role, String temporaryPassword) {
         try {
             Map<String, Object> representation = Map.of(
-                    "username", username, "email", contactEmail, "firstName", firstName, "lastName", lastName,
-                    "enabled", true, "emailVerified", false, "requiredActions", List.of("VERIFY_EMAIL", "UPDATE_PASSWORD"));
+                    "username", username, "email", universityEmail, "firstName", firstName, "lastName", lastName,
+                    "enabled", true, "emailVerified", true,
+                    "credentials", List.of(Map.of("type", "password", "value", temporaryPassword, "temporary", true))
+            );
             URI location = restClient.post()
                     .uri(baseUrl + "/admin/realms/{realm}/users", realm)
                     .header(HttpHeaders.AUTHORIZATION, bearer())
@@ -54,7 +56,6 @@ class KeycloakAdminClient {
             UUID userId = UUID.fromString(location.getPath().substring(location.getPath().lastIndexOf('/') + 1));
             try {
                 assignRole(userId, role);
-                sendInvitation(userId);
             } catch (RuntimeException roleFailure) {
                 try { delete(userId); } catch (RuntimeException ignored) { }
                 throw roleFailure;
@@ -68,11 +69,7 @@ class KeycloakAdminClient {
         }
     }
 
-    private void sendInvitation(UUID userId) {
-        restClient.put().uri(baseUrl + "/admin/realms/{realm}/users/{userId}/execute-actions-email", realm, userId)
-                .header(HttpHeaders.AUTHORIZATION, bearer()).contentType(MediaType.APPLICATION_JSON)
-                .body(List.of("VERIFY_EMAIL", "UPDATE_PASSWORD")).retrieve().toBodilessEntity();
-    }
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KeycloakAdminClient.class);
 
     void requireRole(UUID userId, String role) {
         Map<?, ?>[] roles = restClient.get()

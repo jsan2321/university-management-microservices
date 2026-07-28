@@ -22,9 +22,18 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ums}
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    properties:
+      mail:
+        smtp:
+          auth: false
 
 springdoc:
   paths-to-exclude: /internal/**
+
+
 
 ums:
   audit:

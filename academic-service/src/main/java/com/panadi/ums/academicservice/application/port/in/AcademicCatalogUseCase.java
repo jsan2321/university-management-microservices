@@ -48,6 +48,7 @@ public interface AcademicCatalogUseCase {
     PageResult<Semester> listSemesters(SemesterStatus status, int page, int size);
     Semester activateSemester(UUID id);
     Semester deactivateSemester(UUID id);
+    Semester toggleRegistration(UUID id, boolean open);
 
     Subject createSubject(SubjectCommand command);
     Subject updateSubject(UUID id, SubjectCommand command);

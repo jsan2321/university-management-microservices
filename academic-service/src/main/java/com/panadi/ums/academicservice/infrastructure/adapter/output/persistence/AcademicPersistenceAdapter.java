@@ -273,13 +273,14 @@ class AcademicPersistenceAdapter implements DepartmentRepositoryPort, ProgramRep
         entity.startDate = domain.startDate();
         entity.endDate = domain.endDate();
         entity.status = domain.status();
+        entity.isRegistrationOpen = domain.isRegistrationOpen();
         entity.createdAt = domain.createdAt() == null ? LocalDateTime.now() : domain.createdAt();
         entity.updatedAt = domain.updatedAt() == null ? LocalDateTime.now() : domain.updatedAt();
         return entity;
     }
 
     private Semester toDomain(SemesterEntity entity) {
-        return new Semester(entity.id, entity.name, entity.startDate, entity.endDate, entity.status, entity.createdAt, entity.updatedAt);
+        return new Semester(entity.id, entity.name, entity.startDate, entity.endDate, entity.status, entity.isRegistrationOpen, entity.createdAt, entity.updatedAt);
     }
 
     private SubjectEntity toEntity(Subject domain) {

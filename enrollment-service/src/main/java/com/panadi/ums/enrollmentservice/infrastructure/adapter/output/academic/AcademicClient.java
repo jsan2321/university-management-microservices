@@ -21,7 +21,7 @@ interface AcademicClient {
     @GetMapping("/subjects/{id}")
     SubjectResponse getSubject(@PathVariable UUID id);
 
-    record SemesterResponse(UUID id, String name, String status) {
+    record SemesterResponse(UUID id, String name, String status, boolean isRegistrationOpen) {
     }
 
     record SectionResponse(UUID id, UUID subjectId, UUID teacherId, UUID semesterId, String sectionCode, int capacity, List<ScheduleResponse> schedules, String status) {

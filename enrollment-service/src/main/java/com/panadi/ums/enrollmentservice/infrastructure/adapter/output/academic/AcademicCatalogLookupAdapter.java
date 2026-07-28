@@ -24,7 +24,7 @@ class AcademicCatalogLookupAdapter implements AcademicCatalogLookupPort {
     public SemesterSnapshot getSemester(UUID semesterId) {
         try {
             AcademicClient.SemesterResponse response = CircuitBreaker.decorateSupplier(breaker, () -> client.getSemester(semesterId)).get();
-            return new SemesterSnapshot(response.id(), response.name(), response.status());
+            return new SemesterSnapshot(response.id(), response.name(), response.status(), response.isRegistrationOpen());
         } catch (FeignException.NotFound exception) {
             throw new ApplicationException("Semester does not exist");
         } catch (RuntimeException exception) {

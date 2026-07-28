@@ -11,7 +11,7 @@ public interface AcademicCatalogLookupPort {
     SectionSnapshot getSection(UUID sectionId);
     SubjectSnapshot getSubject(UUID subjectId);
 
-    record SemesterSnapshot(UUID id, String name, String status) {
+    record SemesterSnapshot(UUID id, String name, String status, boolean isRegistrationOpen) {
         public boolean isActive() {
             return "ACTIVE".equals(status);
         }

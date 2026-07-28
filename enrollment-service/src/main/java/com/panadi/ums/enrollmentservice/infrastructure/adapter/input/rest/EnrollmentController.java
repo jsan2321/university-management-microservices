@@ -20,6 +20,7 @@ import com.panadi.ums.enrollmentservice.infrastructure.adapter.input.rest.dto.En
 import com.panadi.ums.security.CurrentActor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -52,10 +53,22 @@ class EnrollmentController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT')")
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     EnrollmentResponse createEnrollment(@Valid @RequestBody CreateEnrollmentRequest request) {
+        CurrentActor actor = CurrentActor.required();
+        if (actor.hasRole("STUDENT")) {
+            UUID studentId = students.byUser(actor.userId()).id();
+            if (!request.studentId().equals(studentId)) {
+                throw new AccessDeniedException("You do not have permission to enroll another student");
+            }
+            var semester = academic.getSemester(request.semesterId());
+            if (!semester.isRegistrationOpen()) {
+                throw new AccessDeniedException("Registration is not currently open for this semester");
+            }
+        }
+
         Enrollment enrollment = useCase.createEnrollment(new CreateEnrollmentCommand(request.studentId(), request.semesterId(), request.sectionIds()));
         audit.record("EnrollmentCreated", "enrollment-service", "Enrollment", enrollment.id(), null,
                 Map.of("studentId", enrollment.studentId(), "semesterId", enrollment.semesterId(), "status", enrollment.status().name()));
@@ -63,9 +76,11 @@ class EnrollmentController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT')")
     EnrollmentResponse getEnrollment(@PathVariable UUID id) {
-        return toResponse(useCase.getEnrollment(id));
+        Enrollment enrollment = useCase.getEnrollment(id);
+        verifyOwnership(enrollment);
+        return toResponse(enrollment);
     }
 
     @GetMapping
@@ -109,20 +124,48 @@ class EnrollmentController {
     }
 
     @PostMapping("/{id}/sections")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT')")
     EnrollmentResponse addSection(@PathVariable UUID id, @Valid @RequestBody AddSectionRequest request) {
+        Enrollment enrollment = useCase.getEnrollment(id);
+        verifyOwnership(enrollment);
+        verifyAddDrop(enrollment);
         return toResponse(useCase.addSection(id, request.sectionId()));
     }
 
     @PatchMapping("/{id}/sections/{sectionId}/drop")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STUDENT')")
     EnrollmentResponse dropSection(@PathVariable UUID id, @PathVariable UUID sectionId) {
+        Enrollment enrollment = useCase.getEnrollment(id);
+        verifyOwnership(enrollment);
+        verifyAddDrop(enrollment);
         return toResponse(useCase.dropSection(id, sectionId));
+    }
+
+    // toggleAddDrop removed
+
+    private void verifyOwnership(Enrollment enrollment) {
+        CurrentActor actor = CurrentActor.required();
+        if (actor.hasRole("STUDENT")) {
+            UUID studentId = students.byUser(actor.userId()).id();
+            if (!enrollment.studentId().equals(studentId)) {
+                throw new AccessDeniedException("You do not have permission to access this enrollment");
+            }
+        }
+    }
+
+    private void verifyAddDrop(Enrollment enrollment) {
+        CurrentActor actor = CurrentActor.required();
+        if (actor.hasRole("STUDENT")) {
+            var semester = academic.getSemester(enrollment.semesterId());
+            if (!semester.isRegistrationOpen()) {
+                throw new AccessDeniedException("Registration is not currently open for this semester");
+            }
+        }
     }
 
     private EnrollmentResponse toResponse(Enrollment enrollment) {
         var semester = academic.getSemester(enrollment.semesterId());
-        return new EnrollmentResponse(enrollment.id(), enrollment.studentId(), enrollment.semesterId(), new SemesterSummaryResponse(semester.id(), semester.name()), enrollment.status(), enrollment.totalCredits(), enrollment.details().stream().map(this::toResponse).toList(), enrollment.createdAt(), enrollment.updatedAt(), enrollment.cancelledAt());
+        return new EnrollmentResponse(enrollment.id(), enrollment.studentId(), enrollment.semesterId(), new SemesterSummaryResponse(semester.id(), semester.name()), enrollment.status(), enrollment.totalCredits(), enrollment.details().stream().map(this::toResponse).toList(), semester.isRegistrationOpen(), enrollment.createdAt(), enrollment.updatedAt(), enrollment.cancelledAt());
     }
 
     private EnrollmentDetailResponse toResponse(EnrollmentDetail detail) {

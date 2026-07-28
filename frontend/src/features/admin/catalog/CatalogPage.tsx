@@ -93,6 +93,13 @@ export function CatalogPage() {
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["catalog", kind] }),
   });
+  const registration = useMutation({
+    mutationFn: async ({ item, open }: { item: Semester; open: boolean }) => {
+      if (session?.demo) return item;
+      return api.toggleSemesterRegistration(item.id, open);
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["catalog", "semesters"] }),
+  });
   return (
     <>
       <PageHeader
@@ -170,19 +177,28 @@ export function CatalogPage() {
                     <Button variant="secondary" onClick={() => setEditing(item)}>Edit</Button>
                     <select
                       className={uiStyles.select}
-                      aria-label={`Change status for ${displayName(item)}`}
+                      aria-label={`Actions for ${displayName(item)}`}
                       value=""
                       onChange={(event) => {
                         const value = event.target.value;
-                        if (value)
+                        if (value === "activate" || value === "deactivate") {
                           status.mutate({ item, active: value === "activate" });
+                        } else if (value === "open_registration" || value === "close_registration") {
+                          registration.mutate({ item: item as Semester, open: value === "open_registration" });
+                        }
                       }}
                     >
                       <option value="" disabled>
-                        Change status
+                        Actions
                       </option>
                       <option value="activate">Activate</option>
                       <option value="deactivate">Deactivate</option>
+                      {kind === "semesters" && (
+                        <>
+                          <option value="open_registration">Open Registration</option>
+                          <option value="close_registration">Close Registration</option>
+                        </>
+                      )}
                     </select>
                   </td>
                 </tr>
@@ -220,7 +236,7 @@ function details(item: Item) {
   if ("durationSemesters" in item)
     return `${item.durationSemesters} semesters · ${item.totalCredits} credits`;
   if ("credits" in item) return `${item.credits} credits`;
-  if ("startDate" in item) return `${item.startDate} — ${item.endDate}`;
+  if ("startDate" in item) return `${item.startDate} — ${item.endDate} ${item.isRegistrationOpen ? '(Registration Open)' : '(Registration Closed)'}`;
   if ("capacity" in item)
     return `${item.capacity} seats · ${item.schedules.length} schedule blocks`;
   return item.description || "No description";

@@ -59,24 +59,6 @@ export interface Student extends AuditFields {
   gender?: string;
   dateOfBirth: string;
   email: string;
-  phone?: string;
-  address?: string;
-  programId: string;
-  admissionDate: string;
-  status: RecordStatus;
-}
-export interface Semester extends AuditFields {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: RecordStatus;
-}
-export interface Subject extends AuditFields {
-  id: string;
-  programId: string;
-  code: string;
-  name: string;
   description?: string;
   credits: number;
   minimumCreditsRequired?: number;
@@ -133,6 +115,7 @@ export interface Enrollment extends AuditFields {
   status: RecordStatus;
   totalCredits: number;
   details: EnrollmentDetail[];
+  isRegistrationOpen: boolean;
   cancelledAt?: string;
 }
 export interface SectionStudents {

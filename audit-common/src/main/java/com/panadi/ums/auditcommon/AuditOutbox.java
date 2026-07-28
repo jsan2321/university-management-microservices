@@ -21,14 +21,12 @@ public class AuditOutbox {
     private final ObjectMapper json;
     private final KafkaTemplate<String, String> kafka;
     private final Tracer tracer;
-    private final boolean publishingEnabled;
     private final Counter failures;
 
     AuditOutbox(JdbcTemplate jdbc, ObjectMapper json, KafkaTemplate<String, String> kafka, Tracer tracer,
                 AuditOutboxProperties properties, MeterRegistry meters) {
         this.jdbc = jdbc; this.json = json; this.kafka = kafka; this.tracer = tracer;
-        this.publishingEnabled = properties.enabled();
-        this.failures = Counter.builder("ums.audit.outbox.publish.failures").register(meters);
+        this.failures = meters != null ? Counter.builder("ums.audit.outbox.publish.failures").register(meters) : null;
     }
 
     public void record(String type, String producer, String aggregateType, UUID aggregateId, UUID actorId, Map<String, Object> payload) {
@@ -42,10 +40,9 @@ public class AuditOutbox {
         }
     }
 
-    @Scheduled(fixedDelayString = "${ums.audit.outbox.publish-delay:1000}")
+    @Scheduled(fixedDelayString = "")
     @Transactional
     void publishPending() {
-        if (!publishingEnabled) return;
         List<OutboxRow> rows = jdbc.query("select event_id, payload from audit_outbox where published_at is null order by occurred_at limit 100 for update skip locked",
                 (ResultSet rs, int ignored) -> new OutboxRow(UUID.fromString(rs.getString("event_id")), rs.getString("payload")));
         for (OutboxRow row : rows) {
@@ -53,7 +50,7 @@ public class AuditOutbox {
                 kafka.send("ums.audit.v1", row.id().toString(), row.payload()).get();
                 jdbc.update("update audit_outbox set published_at = ?, publish_attempts = publish_attempts + 1, last_error = null where event_id = ?", Instant.now(), row.id());
             } catch (Exception exception) {
-                failures.increment();
+                if (failures != null) failures.increment();
                 jdbc.update("update audit_outbox set publish_attempts = publish_attempts + 1, last_error = ? where event_id = ?", exception.getMessage(), row.id());
             }
         }
