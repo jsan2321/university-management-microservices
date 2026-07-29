@@ -61,7 +61,7 @@ export function AssignmentsPage() {
                 id: section.id,
                 sectionCode: section.sectionCode,
                 label: subject
-                  ? `${subject.code} — ${subject.name} · ${section.sectionCode}`
+                  ? `${subject.name} · ${section.sectionCode}`
                   : section.sectionCode,
               };
             });
@@ -78,7 +78,7 @@ export function AssignmentsPage() {
         item.details.map((detail) => ({
           id: detail.sectionId,
           sectionCode: detail.section.sectionCode,
-          label: `${detail.subject.code} — ${detail.subject.name} · ${detail.section.sectionCode}`,
+          label: `${detail.subject.name} · ${detail.section.sectionCode}`,
         })),
       );
     },
@@ -118,7 +118,7 @@ export function AssignmentsPage() {
             : "Review published work, submit a response, and see released grades."
         }
         action={
-          teacher ? (
+          teacher && availableSections.length > 0 ? (
             <Button onClick={() => setCreating(true)}>
               <Plus size={17} />
               New assignment
@@ -126,21 +126,39 @@ export function AssignmentsPage() {
           ) : undefined
         }
       />
-      <div className={styles.catalogNav}>
-        {sectionQuery.data?.map((section) => (
-          <button
-            key={section.id}
-            className={activeSection === section.id ? styles.active : ""}
-            onClick={() => {
-              setSectionId(section.id);
-              setSearchParams({ sectionId: section.id });
+      {availableSections.length > 0 && (
+        <div style={{ marginBottom: "20px" }}>
+          <label style={{ marginRight: "10px", fontWeight: 500 }}>Select Section:</label>
+          <select 
+            value={activeSection}
+            onChange={(e) => {
+              setSectionId(e.target.value);
+              setSearchParams({ sectionId: e.target.value });
             }}
+            style={{ padding: "6px", borderRadius: "4px", border: "1px solid #ccc" }}
           >
-            {section.label}
-          </button>
-        ))}
-      </div>
-      {query.isPending ? (
+            {availableSections.map((section) => (
+              <option key={section.id} value={section.id}>
+                {section.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+      {sectionQuery.isPending ? (
+        <LoadingState />
+      ) : sectionQuery.error ? (
+        <ErrorState error={sectionQuery.error} retry={() => void sectionQuery.refetch()} />
+      ) : availableSections.length === 0 ? (
+        <EmptyState
+          title={teacher ? "No sections assigned" : "No active enrollments"}
+          description={
+            teacher
+              ? "You will be able to manage assignments once you are assigned to a section."
+              : "You will be able to view assignments once you are enrolled in a section."
+          }
+        />
+      ) : query.isPending ? (
         <LoadingState />
       ) : query.error ? (
         <ErrorState error={query.error} retry={() => void query.refetch()} />

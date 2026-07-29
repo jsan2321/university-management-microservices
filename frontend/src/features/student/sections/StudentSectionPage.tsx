@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
 import {
@@ -13,6 +14,7 @@ import { assignments, enrollments, sections } from "../../../test/fixtures";
 import styles from "../../feature.module.css";
 export function StudentSectionPage() {
   const { sectionId = "" } = useParams();
+  const navigate = useNavigate();
   const api = useServiceApi();
   const { session } = useAuth();
   const query = useQuery({
@@ -57,7 +59,18 @@ export function StudentSectionPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Enrolled section"
+        eyebrow={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button 
+              onClick={() => navigate(-1)} 
+              style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit', background: 'transparent', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+            >
+              <ChevronLeft size={16} /> Back
+            </button>
+            <span>/</span>
+            <span>Class details</span>
+          </div>
+        }
         title={`${query.data.enrollment.subject.code} — ${query.data.enrollment.subject.name} · ${query.data.section.sectionCode}`}
         description="Course context, attendance progress, and published work for this section."
       />

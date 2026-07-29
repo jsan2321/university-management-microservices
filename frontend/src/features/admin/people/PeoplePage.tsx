@@ -12,6 +12,7 @@ import type {
 } from "../../../api/generated/contracts";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
+import { Link } from "react-router-dom";
 import {
   Button,
   DataTable,
@@ -49,19 +50,20 @@ type FormValues = z.infer<typeof schema>;
 export function PeoplePage() {
   const kind = useParams().kind === "teachers" ? "teacher" : "student";
   const [creating, setCreating] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const api = useServiceApi();
   const { session } = useAuth();
   const qc = useQueryClient();
   const query = useQuery<PageResponse<Student | Teacher>>({
-    queryKey: ["people", kind],
+    queryKey: ["people", kind, statusFilter],
     queryFn: async () => {
       if (session?.demo)
         return page<Student | Teacher>(
-          kind === "student" ? students : teachers,
+          (kind === "student" ? students : teachers).filter(p => !statusFilter || p.status === statusFilter)
         );
       return kind === "student"
-        ? await api.students(0, 100)
-        : await api.teachers(0, 100);
+        ? await api.students(0, 100, undefined, statusFilter || undefined)
+        : await api.teachers(0, 100, undefined, statusFilter || undefined);
     },
   });
   const changeStatus = useMutation({
@@ -97,7 +99,7 @@ export function PeoplePage() {
       ) : query.data.content.length === 0 ? (
         <EmptyState
           title={`No ${label.toLowerCase()} yet`}
-          description={`Provision the first ${kind}; the identity service will create both the Keycloak account and academic profile.`}
+          description={`Add the first ${kind} to automatically generate their credentials and university profile.`}
           action={
             <Button onClick={() => setCreating(true)}>Create {kind}</Button>
           }
@@ -106,6 +108,18 @@ export function PeoplePage() {
         <Panel
           title={label}
           description={`${query.data.totalElements} academic profiles`}
+          action={
+            <select
+              className={uiStyles.select}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="SUSPENDED">Suspended</option>
+            </select>
+          }
         >
           <DataTable>
             <thead>
@@ -144,27 +158,37 @@ export function PeoplePage() {
                     <StatusBadge value={person.status} />
                   </td>
                   <td>
-                    <select
-                      className={uiStyles.select}
-                      value=""
-                      aria-label={`Change status for ${person.firstName} ${person.lastName}`}
-                      onChange={(event) => {
-                        if (event.target.value)
-                          changeStatus.mutate({
-                            id: person.id,
-                            action: event.target.value,
-                          });
-                      }}
-                    >
-                      <option value="" disabled>
-                        Change status
-                      </option>
-                      <option value="activate">Activate</option>
-                      <option value="deactivate">Deactivate</option>
-                      {kind === "student" && (
-                        <option value="suspend">Suspend</option>
-                      )}
-                    </select>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <Link
+                        to={`/admin/people/${kind === "student" ? "students" : "teachers"}/${person.id}`}
+                        className={uiStyles.button}
+                        style={{ padding: "0.25rem 0.5rem", height: "auto" }}
+                      >
+                        Profile
+                      </Link>
+                      <select
+                        className={uiStyles.select}
+                        value=""
+                        aria-label={`Change status for ${person.firstName} ${person.lastName}`}
+                        onChange={(event) => {
+                          if (event.target.value) {
+                            changeStatus.mutate({
+                              id: person.id,
+                              action: event.target.value,
+                            });
+                          }
+                        }}
+                      >
+                        <option value="" disabled>
+                          Change status
+                        </option>
+                        <option value="activate">Activate</option>
+                        <option value="deactivate">Deactivate</option>
+                        {kind === "student" && (
+                          <option value="suspend">Suspend</option>
+                        )}
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -272,7 +296,7 @@ function ProvisionDialog({
   return (
     <Dialog
       title={`Create ${kind}`}
-      description="One submission creates the Keycloak account and its linked academic profile."
+      description="Enter the details below to generate the academic profile and login credentials."
       onClose={onClose}
     >
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))}>

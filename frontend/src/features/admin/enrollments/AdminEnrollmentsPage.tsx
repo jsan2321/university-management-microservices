@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
 import {
@@ -27,13 +28,14 @@ import {
 } from "../../../test/fixtures";
 export function AdminEnrollmentsPage() {
   const [open, setOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const api = useServiceApi();
   const { session } = useAuth();
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: ["admin", "enrollments"],
+    queryKey: ["admin", "enrollments", statusFilter],
     queryFn: () =>
-      session?.demo ? page(enrollments) : api.enrollments(0, 100),
+      session?.demo ? page(enrollments.filter(e => !statusFilter || e.status === statusFilter)) : api.enrollments(0, 100, { status: statusFilter || undefined }),
   });
   const references = useQuery({
     queryKey: ["admin", "enrollment-references"],
@@ -74,6 +76,17 @@ export function AdminEnrollmentsPage() {
         <Panel
           title="Enrollment records"
           description={`${query.data.totalElements} records`}
+          action={
+            <select
+              className={uiStyles.select}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          }
         >
           <DataTable>
             <thead>
@@ -104,16 +117,19 @@ export function AdminEnrollmentsPage() {
                     <StatusBadge value={item.status} />
                   </td>
                   <td>
-                    {item.status === "ACTIVE" && (
-                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      <Link to={`/admin/enrollments/${item.id}`} className={`${uiStyles.button} ${uiStyles.secondary}`} style={{ textDecoration: 'none' }}>
+                        Manage
+                      </Link>
+                      {item.status === "ACTIVE" && (
                         <Button
                           variant="danger"
                           onClick={() => cancel.mutate(item.id)}
                         >
                           Cancel
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

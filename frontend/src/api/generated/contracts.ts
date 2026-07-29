@@ -43,6 +43,7 @@ export interface Teacher extends AuditFields {
   departmentId: string;
   userId: string;
   teacherCode: string;
+
   firstName: string;
   lastName: string;
   email: string;
@@ -56,6 +57,7 @@ export interface Student extends AuditFields {
   studentCode: string;
   firstName: string;
   lastName: string;
+  programId: string;
   gender?: string;
   dateOfBirth: string;
   email: string;

@@ -23,6 +23,7 @@ import styles from "../../feature.module.css";
 
 export function StudentEnrollmentsPage() {
   const [open, setOpen] = useState(false);
+  const [hideOld, setHideOld] = useState(true);
   const api = useServiceApi();
   const { session } = useAuth();
   const query = useQuery({
@@ -57,6 +58,16 @@ export function StudentEnrollmentsPage() {
         <Panel
           title="Enrollment history"
           description={`${query.data.totalElements} records`}
+          action={
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.9rem", cursor: "pointer" }}>
+              <input 
+                type="checkbox" 
+                checked={hideOld} 
+                onChange={(e) => setHideOld(e.target.checked)} 
+              />
+              Hide cancelled/old
+            </label>
+          }
         >
           <DataTable>
             <thead>
@@ -68,7 +79,9 @@ export function StudentEnrollmentsPage() {
               </tr>
             </thead>
             <tbody>
-              {query.data.content.map((item) => (
+              {query.data.content
+                .filter((item) => !hideOld || item.status === "ACTIVE")
+                .map((item) => (
                 <tr key={item.id}>
                   <td>
                     <Link to={`/student/enrollments/${item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -83,7 +96,8 @@ export function StudentEnrollmentsPage() {
                       <Link
                         className={styles.link}
                         key={detail.id}
-                        to={`/student/sections/${detail.sectionId}`}
+                        to={`/student/classes/${detail.sectionId}`}
+                        style={{ display: "block", paddingBottom: "4px" }}
                       >
                         {detail.subject.code} · {detail.subject.name} · {detail.section.sectionCode}
                       </Link>
@@ -124,6 +138,7 @@ function StudentEnrollmentDialog({ onClose }: { onClose: () => void }) {
         semesters: sem.content.filter(s => s.isRegistrationOpen),
         sections: sec.content,
         subjects: sub.content,
+        studentId: student.id,
       };
     },
   });
@@ -131,7 +146,7 @@ function StudentEnrollmentDialog({ onClose }: { onClose: () => void }) {
     mutationFn: () =>
       session?.demo
         ? Promise.resolve({})
-        : api.createEnrollment({ studentId: profileId!, semesterId, sectionIds }),
+        : api.createEnrollment({ studentId: refs.data!.studentId, semesterId, sectionIds }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["student", "enrollments"] });
       onClose();

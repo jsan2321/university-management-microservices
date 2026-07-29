@@ -18,4 +18,5 @@ public interface AttendanceRepositoryPort {
     PageResult<Attendance> findAttendances(UUID sessionId, AttendanceStatus status, int page, int size);
     long countSessionsBySectionId(UUID sectionId);
     long countPresentByStudentIdAndSectionId(UUID studentId, UUID sectionId);
+    long countAttendancesByStudentIdAndSectionId(UUID studentId, UUID sectionId);
 }

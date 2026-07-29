@@ -15,14 +15,28 @@ export function ProfilePage() {
   const api = useServiceApi();
   const query = useQuery({
     queryKey: [session?.role, "profile"],
-    queryFn: () =>
-      session?.demo
+    queryFn: () => {
+      if (session?.role === "ADMIN") {
+        const displayName = session.name.replace("Local ", "");
+        const parts = displayName.split(" ");
+        return Promise.resolve({
+          firstName: parts[0] || "System",
+          lastName: parts.slice(1).join(" "),
+          email: session.email || "admin@ums.local",
+          status: "ACTIVE",
+          adminCode: `ADM-${session.username.toUpperCase()}`,
+          hireDate: "System Default",
+          phone: "Not required",
+        });
+      }
+      return session?.demo
         ? session.role === "TEACHER"
           ? teachers[0]
           : students[0]
         : session?.role === "TEACHER"
           ? api.teacherMe()
-          : api.studentMe(),
+          : api.studentMe();
+    },
   });
   if (query.isPending) return <LoadingState />;
   if (query.error)
@@ -31,13 +45,17 @@ export function ProfilePage() {
     );
   const profile = query.data;
   const code =
-    "teacherCode" in profile ? profile.teacherCode : profile.studentCode;
+    "teacherCode" in profile
+      ? profile.teacherCode
+      : "adminCode" in profile
+      ? profile.adminCode
+      : profile.studentCode;
   return (
     <>
       <PageHeader
         eyebrow="Account-linked profile"
         title="My profile"
-        description="This academic profile is linked to your Keycloak identity. You never need to enter or copy a user ID."
+        description="View your personal information and university credentials."
       />
       <div className={styles.identity}>
         <Panel>
@@ -63,15 +81,27 @@ export function ProfilePage() {
               <dd>{profile.email}</dd>
             </div>
             <div>
-              <dt>{"teacherCode" in profile ? "Teacher code" : "Student code"}</dt>
+              <dt>
+                {"teacherCode" in profile
+                  ? "Teacher code"
+                  : "adminCode" in profile
+                  ? "Admin code"
+                  : "Student code"}
+              </dt>
               <dd>{code}</dd>
             </div>
             <div>
               <dt>
-                {"teacherCode" in profile ? "Hire date" : "Admission date"}
+                {"teacherCode" in profile
+                  ? "Hire date"
+                  : "adminCode" in profile
+                  ? "Account created"
+                  : "Admission date"}
               </dt>
               <dd>
                 {"teacherCode" in profile
+                  ? profile.hireDate
+                  : "adminCode" in profile
                   ? profile.hireDate
                   : profile.admissionDate}
               </dd>

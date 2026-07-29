@@ -139,6 +139,7 @@ export function createServiceApi(getToken: TokenProvider) {
     teacherMe: () => client.get<Teacher>(`${academic}/teachers/me`),
     teacherSections: () =>
       client.get<TeacherSection[]>(`${academic}/teachers/me/sections`),
+    teacher: (id: string) => client.get<Teacher>(`${academic}/teachers/${id}`),
     setTeacherStatus: (id: string, active: boolean) =>
       statusAction<Teacher>(
         `${academic}/teachers`,
@@ -147,6 +148,7 @@ export function createServiceApi(getToken: TokenProvider) {
       ),
     students: (page = 0, size = 20, programId?: string, status?: string) =>
       list<Student>(student, { page, size, programId, status }),
+    student: (id: string) => client.get<Student>(`${student}/${id}`),
     studentMe: () => client.get<Student>(`${student}/me`),
     setStudentStatus: (
       id: string,

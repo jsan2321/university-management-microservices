@@ -83,16 +83,13 @@ export function AdminOverviewPage() {
             />
           </ul>
         </Panel>
-        <Panel title="Identity rule" description="How account creation works">
+        <Panel title="Account management" description="Automated provisioning">
           <div style={{ padding: 18 }}>
             <p>
-              Use the student or teacher creation screen in this portal. The
-              identity service creates the Keycloak account and profile
-              together.
+              Use the People tab to provision new students and teachers. The system automatically handles their credentials and academic records.
             </p>
             <p className={styles.formNotice}>
-              Do not create users manually in the Keycloak console or paste
-              Keycloak IDs into forms.
+              Everything is managed through this portal to ensure records stay synchronized.
             </p>
           </div>
         </Panel>

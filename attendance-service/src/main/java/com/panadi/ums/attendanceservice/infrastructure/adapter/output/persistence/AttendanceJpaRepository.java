@@ -21,4 +21,13 @@ interface AttendanceJpaRepository extends JpaRepository<AttendanceEntity, UUID>,
               and attendance.status = :status
             """)
     long countByStudentIdAndSectionIdAndStatus(@Param("studentId") UUID studentId, @Param("sectionId") UUID sectionId, @Param("status") AttendanceStatus status);
+
+    @Query("""
+            select count(attendance)
+            from AttendanceEntity attendance, AttendanceSessionEntity session
+            where attendance.attendanceSessionId = session.id
+              and attendance.studentId = :studentId
+              and session.sectionId = :sectionId
+            """)
+    long countByStudentIdAndSectionId(@Param("studentId") UUID studentId, @Param("sectionId") UUID sectionId);
 }

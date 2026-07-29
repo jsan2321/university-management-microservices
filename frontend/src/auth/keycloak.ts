@@ -38,6 +38,7 @@ export async function bootstrapSession(): Promise<Session | null> {
         "University user",
     ),
     username: String(kc.tokenParsed?.preferred_username ?? "user"),
+    email: String(kc.tokenParsed?.email ?? ""),
     role,
     demo: false,
   };
@@ -46,6 +47,7 @@ export function demoSession(role: Role): Session {
   return {
     name: demoNames[role],
     username: `demo.${role.toLowerCase()}`,
+    email: `demo.${role.toLowerCase()}@example.com`,
     role,
     demo: true,
   };

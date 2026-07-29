@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Save } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { ChevronLeft, Plus, Save } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
 import {
@@ -127,7 +127,15 @@ export function AttendancePage() {
   return (
     <>
       <PageHeader
-        eyebrow="Attendance register"
+        eyebrow={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/teacher/sections" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <ChevronLeft size={16} /> Back
+            </Link>
+            <span>/</span>
+            <span>Attendance register</span>
+          </div>
+        }
         title={section ? teacherSectionLabel(section) : "Section attendance"}
         description="Create a class meeting, then mark each enrolled student before saving the register."
         action={

@@ -124,9 +124,9 @@ export function CatalogPage() {
           </NavLink>
         ))}
       </nav>
-      <div className={uiStyles.actions} style={{ margin: "16px 0" }}>
-        <input aria-label="Search catalog" placeholder="Search code or name" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <select aria-label="Filter catalog status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPageIndex(0); }}>
+      <div className={uiStyles.filters} style={{ margin: "16px 0" }}>
+        <input className={uiStyles.select} style={{ width: '300px' }} aria-label="Search catalog" placeholder="Search code or name" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <select className={uiStyles.select} aria-label="Filter catalog status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPageIndex(0); }}>
           <option value="">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
         </select>
       </div>
@@ -174,41 +174,47 @@ export function CatalogPage() {
                     <StatusBadge value={item.status} />
                   </td>
                   <td>
-                    <Button variant="secondary" onClick={() => setEditing(item)}>Edit</Button>
-                    <select
-                      className={uiStyles.select}
-                      aria-label={`Actions for ${displayName(item)}`}
-                      value=""
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        if (value === "activate" || value === "deactivate") {
-                          status.mutate({ item, active: value === "activate" });
-                        } else if (value === "open_registration" || value === "close_registration") {
-                          registration.mutate({ item: item as Semester, open: value === "open_registration" });
-                        }
-                      }}
-                    >
-                      <option value="" disabled>
-                        Actions
-                      </option>
-                      <option value="activate">Activate</option>
-                      <option value="deactivate">Deactivate</option>
-                      {kind === "semesters" && (
-                        <>
-                          <option value="open_registration">Open Registration</option>
-                          <option value="close_registration">Close Registration</option>
-                        </>
-                      )}
-                    </select>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <Button variant="secondary" onClick={() => setEditing(item)}>Edit</Button>
+                      <select
+                        className={uiStyles.select}
+                        style={{ width: 'auto', minWidth: '120px' }}
+                        aria-label={`Actions for ${displayName(item)}`}
+                        value=""
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          if (value === "activate" || value === "deactivate") {
+                            status.mutate({ item, active: value === "activate" });
+                          } else if (value === "open_registration" || value === "close_registration") {
+                            registration.mutate({ item: item as Semester, open: value === "open_registration" });
+                          }
+                          event.target.value = "";
+                        }}
+                      >
+                        <option value="" disabled>
+                          Actions
+                        </option>
+                        <option value="activate">Activate</option>
+                        <option value="deactivate">Deactivate</option>
+                        {kind === "semesters" && (
+                          <>
+                            <option value="open_registration">Open Registration</option>
+                            <option value="close_registration">Close Registration</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </DataTable>
-          <div className={uiStyles.actions} style={{ marginTop: 16 }}>
-            <Button variant="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((value) => value - 1)}>Previous</Button>
-            <span>Page {query.data.page + 1} of {Math.max(1, query.data.totalPages)}</span>
-            <Button variant="secondary" disabled={pageIndex + 1 >= query.data.totalPages} onClick={() => setPageIndex((value) => value + 1)}>Next</Button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line-100)' }}>
+            <span style={{ color: 'var(--ink-700)', fontSize: '14px' }}>Page {query.data.page + 1} of {Math.max(1, query.data.totalPages)}</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button variant="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((value) => value - 1)}>Previous</Button>
+              <Button variant="secondary" disabled={pageIndex + 1 >= query.data.totalPages} onClick={() => setPageIndex((value) => value + 1)}>Next</Button>
+            </div>
           </div>
         </Panel>
       )}

@@ -18,8 +18,9 @@ import {
   uiStyles,
 } from "../../../components/ui";
 import styles from "../../feature.module.css";
+import { students } from "../../../test/fixtures";
 
-export function StudentEnrollmentDetailsPage() {
+export function AdminEnrollmentDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [open, setOpen] = useState(false);
   const api = useServiceApi();
@@ -27,40 +28,51 @@ export function StudentEnrollmentDetailsPage() {
   const qc = useQueryClient();
 
   const query = useQuery({
-    queryKey: ["student", "enrollments", id],
+    queryKey: ["admin", "enrollments", id],
     queryFn: () => {
       if (session?.demo) return Promise.reject(new Error("Demo mode not fully supported here"));
       return api.enrollment(id!);
     },
     enabled: !!id,
   });
+  
+  const studentQuery = useQuery({
+    queryKey: ["admin", "students"],
+    queryFn: async () => {
+       if (session?.demo) return students;
+       const res = await api.students(0, 100);
+       return res.content;
+    }
+  });
 
   const drop = useMutation({
     mutationFn: (sectionId: string) => api.dropEnrollmentSection(id!, sectionId),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["student", "enrollments", id] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "enrollments", id] }),
   });
 
-  if (query.isPending) return <LoadingState />;
+  if (query.isPending || studentQuery.isPending) return <LoadingState />;
   if (query.error) return <ErrorState error={query.error} retry={() => void query.refetch()} />;
+  if (studentQuery.error) return <ErrorState error={studentQuery.error} retry={() => void studentQuery.refetch()} />;
   
   const enrollment = query.data;
+  const student = studentQuery.data?.find(s => s.id === enrollment.studentId);
 
   return (
     <>
       <PageHeader
         eyebrow={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Link to="/student/enrollments" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+            <Link to="/admin/enrollments" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
               <ChevronLeft size={16} /> Back
             </Link>
             <span>/</span>
-            <span>Registration Details</span>
+            <span>Registration Details: {student?.firstName} {student?.lastName}</span>
           </div>
         }
         title={`Enrollment: ${enrollment.semester.name}`}
         description={`Status: ${enrollment.status} · Total Credits: ${enrollment.totalCredits} ${enrollment.isRegistrationOpen ? "· Registration: OPEN" : ""}`}
         action={
-          enrollment.isRegistrationOpen && enrollment.status === "ACTIVE" ? (
+          enrollment.status === "ACTIVE" ? (
             <Button onClick={() => setOpen(true)}>
               <Plus size={17} />
               Add Class
@@ -72,7 +84,7 @@ export function StudentEnrollmentDetailsPage() {
       {enrollment.details.length === 0 ? (
         <EmptyState
           title="No classes found"
-          description="You are not enrolled in any classes for this semester."
+          description="This student is not enrolled in any classes for this semester."
         />
       ) : (
         <Panel
@@ -98,20 +110,15 @@ export function StudentEnrollmentDetailsPage() {
                     />
                   </td>
                   <td>
-                    <Link
-                      className={styles.link}
-                      to={`/student/sections/${detail.sectionId}`}
-                    >
-                      {detail.section.sectionCode}
-                    </Link>
+                    {detail.section.sectionCode}
                   </td>
                   <td>{detail.credits}</td>
                   <td>
-                    {enrollment.isRegistrationOpen && enrollment.status === "ACTIVE" && (
+                    {enrollment.status === "ACTIVE" && (
                       <Button
                         variant="danger"
                         onClick={() => {
-                          if (confirm(`Are you sure you want to drop ${detail.subject.name}?`)) {
+                          if (confirm(`Are you sure you want to drop ${detail.subject.name} for this student?`)) {
                             drop.mutate(detail.sectionId);
                           }
                         }}
@@ -127,24 +134,26 @@ export function StudentEnrollmentDetailsPage() {
         </Panel>
       )}
 
-      {open && <AddSectionDialog enrollmentId={id!} semesterId={enrollment.semesterId} onClose={() => setOpen(false)} />}
+      {open && <AddSectionDialog enrollmentId={id!} semesterId={enrollment.semesterId} studentId={enrollment.studentId} onClose={() => setOpen(false)} />}
     </>
   );
 }
 
-function AddSectionDialog({ enrollmentId, semesterId, onClose }: { enrollmentId: string; semesterId: string; onClose: () => void }) {
+function AddSectionDialog({ enrollmentId, semesterId, studentId, onClose }: { enrollmentId: string; semesterId: string; studentId: string; onClose: () => void }) {
   const api = useServiceApi();
+  const { session } = useAuth();
   const qc = useQueryClient();
   const [sectionId, setSectionId] = useState("");
 
   const refs = useQuery({
-    queryKey: ["enrollment", "available-sections", semesterId],
+    queryKey: ["admin", "enrollment", "available-sections", semesterId],
     queryFn: async () => {
-      const [sec, student] = await Promise.all([
+      const [sec, studentsData] = await Promise.all([
         api.sections(0, 100, { semesterId, status: "ACTIVE" }),
-        api.studentMe(),
+        api.students(0, 100),
       ]);
-      const sub = await api.subjects(0, 100, student.programId, "ACTIVE");
+      const student = studentsData.content.find(s => s.id === studentId);
+      const sub = await api.subjects(0, 100, student?.programId, "ACTIVE");
       return {
         sections: sec.content,
         subjects: sub.content,
@@ -155,7 +164,8 @@ function AddSectionDialog({ enrollmentId, semesterId, onClose }: { enrollmentId:
   const mutation = useMutation({
     mutationFn: () => api.addEnrollmentSection(enrollmentId, sectionId),
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ["student", "enrollments", enrollmentId] });
+      void qc.invalidateQueries({ queryKey: ["admin", "enrollments", enrollmentId] });
+      void qc.invalidateQueries({ queryKey: ["admin", "enrollments"] });
       onClose();
     },
   });
@@ -166,7 +176,7 @@ function AddSectionDialog({ enrollmentId, semesterId, onClose }: { enrollmentId:
   return (
     <Dialog
       title="Add Class"
-      description="Select a class to add to your current schedule."
+      description="Select a class to add to the student's schedule."
       onClose={onClose}
     >
       <form
