@@ -29,7 +29,6 @@ export function StudentEnrollmentDetailsPage() {
   const query = useQuery({
     queryKey: ["student", "enrollments", id],
     queryFn: () => {
-      if (session?.demo) return Promise.reject(new Error("Demo mode not fully supported here"));
       return api.enrollment(id!);
     },
     enabled: !!id,

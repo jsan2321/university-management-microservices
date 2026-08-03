@@ -13,7 +13,6 @@ import {
   PrimaryCell,
   DataTable,
 } from "../../../components/ui";
-import { enrollments, page } from "../../../test/fixtures";
 import styles from "../../feature.module.css";
 
 export function StudentClassesPage() {
@@ -24,7 +23,7 @@ export function StudentClassesPage() {
   const query = useQuery({
     queryKey: ["student", "enrollments-for-classes"],
     queryFn: () =>
-      session?.demo ? page(enrollments) : api.myEnrollments(0, 100),
+      api.myEnrollments(0, 100),
   });
 
   if (query.isPending) return <LoadingState />;

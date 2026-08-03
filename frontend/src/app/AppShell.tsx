@@ -20,7 +20,6 @@ import { useServiceApi } from "../api/use-service-api";
 import { useAuth } from "../auth/AuthProvider";
 import { roleLabels } from "../auth/session";
 import { Button } from "../components/ui";
-import { semesters } from "../test/fixtures";
 import styles from "./AppShell.module.css";
 
 const navigation: Record<
@@ -84,7 +83,6 @@ export function AppShell() {
   const semesterQuery = useQuery({
     queryKey: ["app-active-semester"],
     queryFn: async () => {
-      if (session?.demo) return semesters.find((s) => s.status === "ACTIVE") || semesters[0];
       const page = await api.semesters(0, 1, "ACTIVE");
       return page.content.length > 0 ? page.content[0] : null;
     },

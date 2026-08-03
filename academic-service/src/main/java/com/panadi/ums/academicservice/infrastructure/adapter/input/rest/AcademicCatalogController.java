@@ -45,6 +45,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import com.panadi.ums.auditcommon.AuditOutbox;
+import com.panadi.ums.security.CurrentActor;
+import java.util.Map;
+
 
 import java.util.List;
 import java.util.UUID;
@@ -54,15 +58,19 @@ import java.util.function.Function;
 @RequestMapping("/api/v1/academic")
 class AcademicCatalogController {
     private final AcademicCatalogUseCase useCase;
+    private final AuditOutbox audit;
 
-    AcademicCatalogController(AcademicCatalogUseCase useCase) {
+    AcademicCatalogController(AcademicCatalogUseCase useCase, AuditOutbox audit) {
         this.useCase = useCase;
+        this.audit = audit;
     }
 
     @PostMapping("/departments")
     @ResponseStatus(HttpStatus.CREATED)
     DepartmentResponse createDepartment(@Valid @RequestBody DepartmentRequest request) {
-        return toResponse(useCase.createDepartment(new DepartmentCommand(request.code(), request.name(), request.description())));
+        DepartmentResponse res = toResponse(useCase.createDepartment(new DepartmentCommand(request.code(), request.name(), request.description())));
+        audit.record("DEPARTMENT_CREATED", "academic-service", "DEPARTMENT", res.id(), CurrentActor.required().userId(), Map.of("code", res.code(), "name", res.name()));
+        return res;
     }
 
     @PutMapping("/departments/{id}")
@@ -93,7 +101,9 @@ class AcademicCatalogController {
     @PostMapping("/programs")
     @ResponseStatus(HttpStatus.CREATED)
     ProgramResponse createProgram(@Valid @RequestBody ProgramRequest request) {
-        return toResponse(useCase.createProgram(new ProgramCommand(request.departmentId(), request.code(), request.name(), request.durationSemesters(), request.totalCredits())));
+        ProgramResponse res = toResponse(useCase.createProgram(new ProgramCommand(request.departmentId(), request.code(), request.name(), request.durationSemesters(), request.totalCredits())));
+        audit.record("PROGRAM_CREATED", "academic-service", "PROGRAM", res.id(), CurrentActor.required().userId(), Map.of("code", res.code(), "name", res.name()));
+        return res;
     }
 
     @PutMapping("/programs/{id}")
@@ -124,7 +134,9 @@ class AcademicCatalogController {
     @PostMapping("/teachers")
     @ResponseStatus(HttpStatus.CREATED)
     TeacherResponse createTeacher(@Valid @RequestBody TeacherRequest request) {
-        return toResponse(useCase.createTeacher(new TeacherCommand(request.departmentId(), request.userId(), request.teacherCode(), request.firstName(), request.lastName(), request.email(), request.phone(), request.hireDate())));
+        TeacherResponse res = toResponse(useCase.createTeacher(new TeacherCommand(request.departmentId(), request.userId(), request.teacherCode(), request.firstName(), request.lastName(), request.email(), request.phone(), request.hireDate())));
+        audit.record("TEACHER_CREATED", "academic-service", "TEACHER", res.id(), CurrentActor.required().userId(), Map.of("teacherCode", res.teacherCode(), "email", res.email()));
+        return res;
     }
 
     @PutMapping("/teachers/{id}")
@@ -155,7 +167,9 @@ class AcademicCatalogController {
     @PostMapping("/semesters")
     @ResponseStatus(HttpStatus.CREATED)
     SemesterResponse createSemester(@Valid @RequestBody SemesterRequest request) {
-        return toResponse(useCase.createSemester(new SemesterCommand(request.name(), request.startDate(), request.endDate())));
+        SemesterResponse res = toResponse(useCase.createSemester(new SemesterCommand(request.name(), request.startDate(), request.endDate())));
+        audit.record("SEMESTER_CREATED", "academic-service", "SEMESTER", res.id(), CurrentActor.required().userId(), Map.of("name", res.name()));
+        return res;
     }
 
     @PutMapping("/semesters/{id}")
@@ -191,7 +205,9 @@ class AcademicCatalogController {
     @PostMapping("/subjects")
     @ResponseStatus(HttpStatus.CREATED)
     SubjectResponse createSubject(@Valid @RequestBody SubjectRequest request) {
-        return toResponse(useCase.createSubject(new SubjectCommand(request.programId(), request.code(), request.name(), request.description(), request.credits(), request.minimumCreditsRequired(), request.prerequisiteSubjectIds())));
+        SubjectResponse res = toResponse(useCase.createSubject(new SubjectCommand(request.programId(), request.code(), request.name(), request.description(), request.credits(), request.minimumCreditsRequired(), request.prerequisiteSubjectIds())));
+        audit.record("SUBJECT_CREATED", "academic-service", "SUBJECT", res.id(), CurrentActor.required().userId(), Map.of("code", res.code(), "name", res.name()));
+        return res;
     }
 
     @PutMapping("/subjects/{id}")
@@ -222,7 +238,9 @@ class AcademicCatalogController {
     @PostMapping("/sections")
     @ResponseStatus(HttpStatus.CREATED)
     SectionResponse createSection(@Valid @RequestBody SectionRequest request) {
-        return toResponse(useCase.createSection(toCommand(request)));
+        SectionResponse res = toResponse(useCase.createSection(toCommand(request)));
+        audit.record("SECTION_CREATED", "academic-service", "SECTION", res.id(), CurrentActor.required().userId(), Map.of("sectionCode", res.sectionCode()));
+        return res;
     }
 
     @PutMapping("/sections/{id}")

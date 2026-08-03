@@ -8,8 +8,6 @@ import {
 } from "react";
 import type { Role } from "../api/generated/contracts";
 import {
-  demoEnabled,
-  demoSession,
   freshToken,
   login,
   logout,
@@ -21,7 +19,6 @@ interface AuthValue {
   login: () => void;
   logout: () => void;
   getToken: () => Promise<string>;
-  setDemoRole: (role: Role) => void;
 }
 const AuthContext = createContext<AuthValue | null>(null);
 export function AuthProvider({
@@ -37,17 +34,12 @@ export function AuthProvider({
     () => ({
       session,
       login: () => {
-        if (demoEnabled) setSession(demoSession("ADMIN"));
-        else void login();
+        void login();
       },
       logout: () => {
-        if (session?.demo) setSession(null);
-        else void logout();
+        void logout();
       },
       getToken,
-      setDemoRole: (role) => {
-        if (demoEnabled) setSession(demoSession(role));
-      },
     }),
     [getToken, session],
   );

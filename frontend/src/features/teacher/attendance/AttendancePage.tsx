@@ -17,12 +17,6 @@ import {
   PrimaryCell,
   uiStyles,
 } from "../../../components/ui";
-import {
-  attendanceSessions,
-  page,
-  students,
-  teacherSections,
-} from "../../../test/fixtures";
 import { teacherSectionLabel } from "../teacher-section";
 import styles from "../../feature.module.css";
 const attendanceValues = ["PRESENT", "ABSENT", "LATE", "EXCUSED"] as const;
@@ -41,37 +35,24 @@ export function AttendancePage() {
     queryKey: ["attendance", sectionId, "sessions"],
     enabled: Boolean(sectionId),
     queryFn: () =>
-      session?.demo
-        ? page(attendanceSessions)
-        : api.attendanceSessions(sectionId, 0, 100),
+      api.attendanceSessions(sectionId, 0, 100),
   });
   const rosterQuery = useQuery({
     queryKey: ["attendance", sectionId, "roster"],
     enabled: Boolean(sectionId),
-    queryFn: () =>
-      session?.demo
-        ? {
-            sectionId,
-            students: students.map((student) => ({
-              studentId: student.id,
-              studentCode: student.studentCode,
-              firstName: student.firstName,
-              lastName: student.lastName,
-            })),
-          }
-        : api.sectionStudents(sectionId),
+    queryFn: () => api.sectionStudents(sectionId),
   });
   const activeSession = selected ?? sessionQuery.data?.content[0]?.id;
   const sectionQuery = useQuery({
     queryKey: ["teacher", "sections"],
     enabled: Boolean(sectionId),
-    queryFn: () => (session?.demo ? teacherSections : api.teacherSections()),
+    queryFn: () => api.teacherSections(),
   });
   const recordsQuery = useQuery({
     queryKey: ["attendance", activeSession, "records"],
     enabled: Boolean(activeSession),
     queryFn: () =>
-      session?.demo ? page([]) : api.attendanceRecords(activeSession!, 0, 100),
+      api.attendanceRecords(activeSession!, 0, 100),
   });
   const roster = rosterQuery.data?.students ?? [];
   const savedMarks = useMemo(
@@ -88,9 +69,7 @@ export function AttendancePage() {
     draftMarks.sessionId === activeSession ? draftMarks.values : savedMarks;
   const save = useMutation({
     mutationFn: () =>
-      session?.demo
-        ? Promise.resolve([])
-        : api.recordAttendance(
+      api.recordAttendance(
             activeSession!,
             roster.map((student) => ({
               studentId: student.studentId,
@@ -262,9 +241,7 @@ function SessionDialog({
   const [topic, setTopic] = useState("");
   const mutation = useMutation({
     mutationFn: () =>
-      session?.demo
-        ? Promise.resolve({})
-        : api.createAttendanceSession({
+      api.createAttendanceSession({
             sectionId,
             sessionNumber: Number(number),
             date,

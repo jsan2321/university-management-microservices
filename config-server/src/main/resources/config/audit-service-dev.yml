@@ -34,3 +34,5 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+
+ums.audit.outbox.enabled: true

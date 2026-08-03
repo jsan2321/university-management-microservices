@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import com.panadi.ums.auditcommon.AuditOutbox;
+import java.util.Map;
+
 
 import java.util.UUID;
 import java.util.List;
@@ -28,8 +31,9 @@ import java.util.List;
 @RestController
 class TeacherIdentityController {
     private final AcademicCatalogUseCase useCase;
+    private final AuditOutbox audit;
 
-    TeacherIdentityController(AcademicCatalogUseCase useCase) { this.useCase = useCase; }
+    TeacherIdentityController(AcademicCatalogUseCase useCase, AuditOutbox audit) { this.useCase = useCase; this.audit = audit; }
 
     @GetMapping("/api/v1/academic/teachers/me")
     @PreAuthorize("hasRole('TEACHER')")
@@ -49,8 +53,10 @@ class TeacherIdentityController {
     @PostMapping("/internal/teachers")
     @ResponseStatus(HttpStatus.CREATED)
     TeacherResponse create(@Valid @RequestBody TeacherRequest request) {
-        return toResponse(useCase.createTeacher(new TeacherCommand(request.departmentId(), request.userId(), request.teacherCode(),
+        TeacherResponse res = toResponse(useCase.createTeacher(new TeacherCommand(request.departmentId(), request.userId(), request.teacherCode(),
                 request.firstName(), request.lastName(), request.email(), request.phone(), request.hireDate())));
+        audit.record("TEACHER_CREATED", "academic-service", "TEACHER", res.id(), CurrentActor.required().userId(), Map.of("teacherCode", res.teacherCode(), "email", res.email()));
+        return res;
     }
 
     @PatchMapping("/internal/teachers/{profileId}/identity/{userId}")

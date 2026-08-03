@@ -13,3 +13,4 @@ eureka:
     fetch-registry: false # don't fetch registry
     service-url: # serverUrl serviceUrl
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+ums.audit.outbox.enabled: true

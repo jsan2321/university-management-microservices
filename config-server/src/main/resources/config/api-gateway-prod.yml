@@ -83,3 +83,5 @@ logging:
     root: WARN
     com.panadi.ums: INFO
     org.springframework.cloud.gateway: INFO
+
+ums.audit.outbox.enabled: true

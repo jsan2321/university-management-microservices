@@ -10,7 +10,6 @@ import {
   Panel,
   StatusBadge,
 } from "../../../components/ui";
-import { students, teachers } from "../../../test/fixtures";
 import styles from "../../feature.module.css";
 import uiStyles from "../../../components/ui.module.css";
 
@@ -23,11 +22,6 @@ export function AdminPersonProfilePage() {
   const query = useQuery({
     queryKey: ["person-profile", kind, id],
     queryFn: async () => {
-      if (session?.demo) {
-        const list = isTeacher ? teachers : students;
-        return list.find((p) => p.id === id) || list[0];
-      }
-      
       if (isTeacher) {
         const profile = await api.teacher(id!);
         const depts = await api.departments(0, 100);
@@ -51,7 +45,6 @@ export function AdminPersonProfilePage() {
   const relatedQuery = useQuery({
     queryKey: ["person-related", kind, id],
     queryFn: async () => {
-      if (session?.demo) return [];
       if (isTeacher) {
         const res = await api.sections(0, 100, { teacherId: id });
         return res.content;

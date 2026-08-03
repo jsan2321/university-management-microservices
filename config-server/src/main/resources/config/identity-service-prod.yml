@@ -92,3 +92,5 @@ logging:
   level:
     root: WARN
     com.panadi.ums: INFO
+
+ums.audit.outbox.enabled: true

@@ -68,3 +68,5 @@ eureka:
 ums:
   frontend:
     allowed-origins: ${FRONTEND_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+ums.audit.outbox.enabled: true

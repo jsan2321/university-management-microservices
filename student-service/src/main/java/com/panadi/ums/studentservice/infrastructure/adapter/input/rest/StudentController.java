@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import com.panadi.ums.auditcommon.AuditOutbox;
+import com.panadi.ums.security.CurrentActor;
+import java.util.Map;
+
 
 import java.util.UUID;
 import java.util.function.Function;
@@ -29,15 +33,19 @@ import java.util.function.Function;
 @RequestMapping("/api/v1/students")
 class StudentController {
     private final StudentUseCase useCase;
+    private final AuditOutbox audit;
 
-    StudentController(StudentUseCase useCase) {
+    StudentController(StudentUseCase useCase, AuditOutbox audit) {
         this.useCase = useCase;
+        this.audit = audit;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     StudentResponse createStudent(@Valid @RequestBody StudentRequest request) {
-        return toResponse(useCase.createStudent(toCommand(request)));
+        StudentResponse res = toResponse(useCase.createStudent(toCommand(request)));
+        audit.record("STUDENT_CREATED", "student-service", "STUDENT", res.id(), CurrentActor.required().userId(), Map.of("studentCode", res.studentCode(), "email", res.email()));
+        return res;
     }
 
     @PutMapping("/{id}")

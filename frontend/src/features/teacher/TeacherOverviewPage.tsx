@@ -10,7 +10,6 @@ import {
   Panel,
   StatusBadge,
 } from "../../components/ui";
-import { teacherSections, teachers } from "../../test/fixtures";
 import { teacherSectionLabel } from "./teacher-section";
 import styles from "../feature.module.css";
 export function TeacherOverviewPage() {
@@ -19,8 +18,8 @@ export function TeacherOverviewPage() {
   const query = useQuery({
     queryKey: ["teacher", "overview"],
     queryFn: async () => {
-      const teacher = session?.demo ? teachers[0] : await api.teacherMe();
-      const assigned = session?.demo ? teacherSections : await api.teacherSections();
+      const teacher = await api.teacherMe();
+      const assigned = await api.teacherSections();
       return { teacher, sections: assigned.filter((section) => section.status === "ACTIVE") };
     },
   });

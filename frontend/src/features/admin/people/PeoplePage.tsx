@@ -27,13 +27,6 @@ import {
   StatusBadge,
   uiStyles,
 } from "../../../components/ui";
-import {
-  departments,
-  page,
-  programs,
-  students,
-  teachers,
-} from "../../../test/fixtures";
 
 const schema = z.object({
   firstName: z.string().min(2, "Enter a first name"),
@@ -57,10 +50,6 @@ export function PeoplePage() {
   const query = useQuery<PageResponse<Student | Teacher>>({
     queryKey: ["people", kind, statusFilter],
     queryFn: async () => {
-      if (session?.demo)
-        return page<Student | Teacher>(
-          (kind === "student" ? students : teachers).filter(p => !statusFilter || p.status === statusFilter)
-        );
       return kind === "student"
         ? await api.students(0, 100, undefined, statusFilter || undefined)
         : await api.teachers(0, 100, undefined, statusFilter || undefined);
@@ -68,7 +57,6 @@ export function PeoplePage() {
   });
   const changeStatus = useMutation({
     mutationFn: async ({ id, action }: { id: string; action: string }) => {
-      if (session?.demo) return {};
       return kind === "student"
         ? api.setStudentStatus(
             id,
@@ -219,7 +207,6 @@ function ProvisionDialog({
   const units = useQuery({
     queryKey: ["provision", kind, "units"],
     queryFn: async () => {
-      if (session?.demo) return kind === "student" ? programs : departments;
       return kind === "student"
         ? (await api.programs(0, 100, undefined, "ACTIVE")).content
         : (await api.departments(0, 100, "ACTIVE")).content;
@@ -262,7 +249,6 @@ function ProvisionDialog({
               hireDate: value.primaryDate,
               phone: value.phone || undefined,
             };
-      if (session?.demo) return { profileId: "preview", status: "COMPLETED", academicCode: "generated", username: "generated", universityEmail: "generated@ums.local" };
       return kind === "student"
         ? api.provisionStudent(body, key.current)
         : api.provisionTeacher(body, key.current);

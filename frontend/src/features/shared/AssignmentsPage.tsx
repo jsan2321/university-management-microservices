@@ -19,15 +19,6 @@ import {
   StatusBadge,
   uiStyles,
 } from "../../components/ui";
-import {
-  assignments,
-  page,
-  sections,
-  students,
-  subjects,
-  submissions,
-  teacherSections,
-} from "../../test/fixtures";
 import styles from "../feature.module.css";
 import { teacherSectionLabel } from "../teacher/teacher-section";
 type AssignmentSection = {
@@ -48,24 +39,6 @@ export function AssignmentsPage() {
   const sectionQuery = useQuery<AssignmentSection[]>({
     queryKey: [session?.role, "assignment-sections"],
     queryFn: async () => {
-      if (session?.demo) {
-        return teacher
-          ? teacherSections.map((section) => ({
-              id: section.id,
-              sectionCode: section.sectionCode,
-              label: teacherSectionLabel(section),
-            }))
-          : sections.map((section) => {
-              const subject = subjects.find((item) => item.id === section.subjectId);
-              return {
-                id: section.id,
-                sectionCode: section.sectionCode,
-                label: subject
-                  ? `${subject.name} · ${section.sectionCode}`
-                  : section.sectionCode,
-              };
-            });
-      }
       if (teacher) {
         return (await api.teacherSections()).map((section) => ({
           id: section.id,
@@ -95,9 +68,7 @@ export function AssignmentsPage() {
     queryKey: [session?.role, "assignments", activeSection],
     enabled: Boolean(activeSection),
     queryFn: () =>
-      session?.demo
-        ? page(assignments)
-        : api.assignments(activeSection, 0, 100, teacher ? undefined : "PUBLISHED", !teacher),
+      api.assignments(activeSection, 0, 100, teacher ? undefined : "PUBLISHED", !teacher),
   });
   const action = useMutation({
     mutationFn: ({ id, type }: { id: string; type: "publish" | "close" }) =>
@@ -275,12 +246,7 @@ function StudentAssignmentAction({
   const { session } = useAuth();
   const query = useQuery({
     queryKey: ["student", "submission", assignment.id],
-    queryFn: () =>
-      session?.demo
-        ? page(
-            submissions.filter((item) => item.assignmentId === assignment.id),
-          )
-        : api.submissions(assignment.id, 0, 10, true),
+    queryFn: () => api.submissions(assignment.id, 0, 10, true),
   });
   const submission = query.data?.content[0];
   if (query.isPending) return <span className={uiStyles.muted}>Checking…</span>;
@@ -315,16 +281,11 @@ function SubmissionReviewDialog({
   const [feedback, setFeedback] = useState<Record<string, string>>({});
   const query = useQuery({
     queryKey: ["teacher", "submissions", assignmentId],
-    queryFn: () =>
-      session?.demo
-        ? page(submissions.filter((item) => item.assignmentId === assignmentId))
-        : api.submissions(assignmentId, 0, 100),
+    queryFn: () => api.submissions(assignmentId, 0, 100),
   });
   const grade = useMutation({
     mutationFn: (id: string) =>
-      session?.demo
-        ? Promise.resolve({})
-        : api.gradeSubmission(
+      api.gradeSubmission(
             id,
             Number(scores[id]),
             feedback[id] || undefined,
@@ -336,7 +297,7 @@ function SubmissionReviewDialog({
   });
   const release = useMutation({
     mutationFn: (id: string) =>
-      session?.demo ? Promise.resolve({}) : api.releaseGrade(id),
+      api.releaseGrade(id),
     onSuccess: () =>
       void qc.invalidateQueries({
         queryKey: ["teacher", "submissions", assignmentId],
@@ -462,9 +423,7 @@ function AssignmentDialog({
   const [points, setPoints] = useState("100");
   const mutation = useMutation({
     mutationFn: () =>
-      session?.demo
-        ? Promise.resolve({})
-        : api.createAssignment({
+      api.createAssignment({
             sectionId,
             title,
             description,
@@ -547,9 +506,7 @@ function SubmissionDialog({
   const [content, setContent] = useState("");
   const mutation = useMutation({
     mutationFn: () =>
-      session?.demo
-        ? Promise.resolve({})
-        : api.submitAssignment(assignmentId, content),
+      api.submitAssignment(assignmentId, content),
   });
   return (
     <Dialog

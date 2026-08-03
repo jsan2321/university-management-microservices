@@ -13,7 +13,6 @@ import {
   PrimaryCell,
   StatusBadge,
 } from "../../../components/ui";
-import { teacherSections } from "../../../test/fixtures";
 import { teacherSectionLabel } from "../teacher-section";
 import styles from "../../feature.module.css";
 export function TeacherSectionsPage() {
@@ -21,7 +20,7 @@ export function TeacherSectionsPage() {
   const { session } = useAuth();
   const query = useQuery({
     queryKey: ["teacher", "sections"],
-    queryFn: async () => session?.demo ? teacherSections : api.teacherSections(),
+    queryFn: async () => api.teacherSections(),
   });
   return (
     <>

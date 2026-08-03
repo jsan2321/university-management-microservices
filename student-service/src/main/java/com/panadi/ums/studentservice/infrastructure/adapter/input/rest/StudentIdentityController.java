@@ -16,14 +16,19 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import com.panadi.ums.auditcommon.AuditOutbox;
+import com.panadi.ums.security.CurrentActor;
+import java.util.Map;
+
 
 import java.util.UUID;
 
 @RestController
 class StudentIdentityController {
     private final StudentUseCase useCase;
+    private final AuditOutbox audit;
 
-    StudentIdentityController(StudentUseCase useCase) { this.useCase = useCase; }
+    StudentIdentityController(StudentUseCase useCase, AuditOutbox audit) { this.useCase = useCase; this.audit = audit; }
 
     @GetMapping("/api/v1/students/me")
     @PreAuthorize("hasRole('STUDENT')")
@@ -34,9 +39,11 @@ class StudentIdentityController {
     @PostMapping("/internal/students")
     @ResponseStatus(HttpStatus.CREATED)
     StudentResponse create(@Valid @RequestBody StudentRequest request) {
-        return toResponse(useCase.createStudent(new StudentCommand(request.userId(), request.studentCode(), request.firstName(),
+        StudentResponse res = toResponse(useCase.createStudent(new StudentCommand(request.userId(), request.studentCode(), request.firstName(),
                 request.lastName(), request.gender(), request.dateOfBirth(), request.email(), request.phone(), request.address(),
                 request.programId(), request.admissionDate())));
+        audit.record("STUDENT_CREATED", "student-service", "STUDENT", res.id(), CurrentActor.required().userId(), Map.of("studentCode", res.studentCode(), "email", res.email()));
+        return res;
     }
 
     @PatchMapping("/internal/students/{profileId}/identity/{userId}")

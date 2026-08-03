@@ -18,7 +18,6 @@ import {
   uiStyles,
 } from "../../../components/ui";
 import styles from "../../feature.module.css";
-import { students } from "../../../test/fixtures";
 
 export function AdminEnrollmentDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,7 +29,6 @@ export function AdminEnrollmentDetailsPage() {
   const query = useQuery({
     queryKey: ["admin", "enrollments", id],
     queryFn: () => {
-      if (session?.demo) return Promise.reject(new Error("Demo mode not fully supported here"));
       return api.enrollment(id!);
     },
     enabled: !!id,
@@ -39,7 +37,6 @@ export function AdminEnrollmentDetailsPage() {
   const studentQuery = useQuery({
     queryKey: ["admin", "students"],
     queryFn: async () => {
-       if (session?.demo) return students;
        const res = await api.students(0, 100);
        return res.content;
     }

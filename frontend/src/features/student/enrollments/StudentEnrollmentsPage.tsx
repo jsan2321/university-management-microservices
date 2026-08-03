@@ -18,7 +18,6 @@ import {
   StatusBadge,
   uiStyles,
 } from "../../../components/ui";
-import { enrollments, page, sections, semesters, subjects } from "../../../test/fixtures";
 import styles from "../../feature.module.css";
 
 export function StudentEnrollmentsPage() {
@@ -29,7 +28,7 @@ export function StudentEnrollmentsPage() {
   const query = useQuery({
     queryKey: ["student", "enrollments"],
     queryFn: () =>
-      session?.demo ? page(enrollments) : api.myEnrollments(0, 100),
+      api.myEnrollments(0, 100),
   });
 
   return (
@@ -127,7 +126,6 @@ function StudentEnrollmentDialog({ onClose }: { onClose: () => void }) {
   const refs = useQuery({
     queryKey: ["student-enrollment", "references"],
     queryFn: async () => {
-      if (session?.demo) return { semesters, sections, subjects };
       const [sem, sec, student] = await Promise.all([
         api.semesters(0, 100, "ACTIVE"),
         api.sections(0, 100, { status: "ACTIVE" }),
@@ -144,9 +142,7 @@ function StudentEnrollmentDialog({ onClose }: { onClose: () => void }) {
   });
   const mutation = useMutation({
     mutationFn: () =>
-      session?.demo
-        ? Promise.resolve({})
-        : api.createEnrollment({ studentId: refs.data!.studentId, semesterId, sectionIds }),
+      api.createEnrollment({ studentId: refs.data!.studentId, semesterId, sectionIds }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["student", "enrollments"] });
       onClose();

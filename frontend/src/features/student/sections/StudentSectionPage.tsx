@@ -10,7 +10,6 @@ import {
   Panel,
   StatusBadge,
 } from "../../../components/ui";
-import { assignments, enrollments, sections } from "../../../test/fixtures";
 import styles from "../../feature.module.css";
 export function StudentSectionPage() {
   const { sectionId = "" } = useParams();
@@ -21,23 +20,6 @@ export function StudentSectionPage() {
     queryKey: ["student", "section", sectionId],
     enabled: Boolean(sectionId),
     queryFn: async () => {
-      if (session?.demo) {
-        const enrollment = enrollments
-          .flatMap((item) => item.details)
-          .find((detail) => detail.sectionId === sectionId);
-        if (!enrollment) throw new Error("This section is not in your active enrollment.");
-        return {
-          section: sections.find((item) => item.id === sectionId)!,
-          enrollment,
-          attendance: {
-            percentage: 92,
-            presentCount: 11,
-            totalSessions: 12,
-            eligibleForFinalEvaluation: true,
-          },
-          assignments,
-        };
-      }
       const [section, attendance, work, records] = await Promise.all([
         api.section(sectionId),
         api.myAttendance(sectionId),

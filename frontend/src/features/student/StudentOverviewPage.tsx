@@ -9,7 +9,6 @@ import {
   PageHeader,
   Panel,
 } from "../../components/ui";
-import { assignments, enrollments, page, students } from "../../test/fixtures";
 import styles from "../feature.module.css";
 export function StudentOverviewPage() {
   const api = useServiceApi();
@@ -17,10 +16,8 @@ export function StudentOverviewPage() {
   const query = useQuery({
     queryKey: ["student", "overview"],
     queryFn: async () => {
-      const profile = session?.demo ? students[0] : await api.studentMe();
-      const records = session?.demo
-        ? page(enrollments)
-        : await api.myEnrollments(0, 100, undefined, "ACTIVE");
+      const profile = await api.studentMe();
+      const records = await api.myEnrollments(0, 100, undefined, "ACTIVE");
       return { profile, enrollments: records.content };
     },
   });
@@ -35,14 +32,7 @@ export function StudentOverviewPage() {
           label: `${detail.subject.code} — ${detail.subject.name} · ${detail.section.sectionCode}`,
         })),
       );
-      const workBySection = session?.demo
-        ? contexts.map((context) => ({
-            context,
-            content: assignments.filter(
-              (assignment) => assignment.sectionId === context.sectionId,
-            ),
-          }))
-        : await Promise.all(
+      const workBySection = await Promise.all(
             contexts.map(async (context) => ({
               context,
               content: (

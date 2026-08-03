@@ -64,7 +64,9 @@ class AttendanceController {
     @ResponseStatus(HttpStatus.CREATED)
     AttendanceSessionResponse createSession(@Valid @RequestBody CreateAttendanceSessionRequest request) {
         requireTeacherSection(request.sectionId());
-        return toResponse(useCase.createSession(new CreateAttendanceSessionCommand(request.sectionId(), request.sessionNumber(), request.date(), request.topic())));
+        AttendanceSessionResponse res = toResponse(useCase.createSession(new CreateAttendanceSessionCommand(request.sectionId(), request.sessionNumber(), request.date(), request.topic())));
+        audit.record("AttendanceSessionCreated", "attendance-service", "AttendanceSession", res.id(), CurrentActor.required().userId(), Map.of("sectionId", res.sectionId(), "date", res.date()));
+        return res;
     }
 
     @GetMapping("/sessions/{id}")
@@ -92,7 +94,7 @@ class AttendanceController {
                 .toList();
         List<Attendance> saved = useCase.recordAttendance(sessionId, new RecordAttendanceCommand(records));
         AttendanceSession session = useCase.getSession(sessionId);
-        audit.record("AttendanceRecorded", "attendance-service", "AttendanceSession", sessionId, null,
+        audit.record("AttendanceRecorded", "attendance-service", "AttendanceSession", sessionId, CurrentActor.required().userId(),
                 Map.of("sectionId", session.sectionId(), "recordCount", saved.size()));
         return saved.stream().map(this::toResponse).toList();
     }

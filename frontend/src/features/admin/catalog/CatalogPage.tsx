@@ -25,15 +25,6 @@ import {
   StatusBadge,
   uiStyles,
 } from "../../../components/ui";
-import {
-  departments,
-  page,
-  programs,
-  sections,
-  semesters,
-  subjects,
-  teachers,
-} from "../../../test/fixtures";
 import styles from "../../feature.module.css";
 
 type Kind = "departments" | "programs" | "subjects" | "semesters" | "sections";
@@ -68,12 +59,6 @@ export function CatalogPage() {
   const query = useQuery({
     queryKey: ["catalog", kind, pageIndex, statusFilter],
     queryFn: async () => {
-      if (session?.demo)
-        return page<Item>(
-          { departments, programs, subjects, semesters, sections }[
-            kind
-          ] as Item[],
-        );
       if (kind === "departments") return api.departments(pageIndex, 20, statusFilter || undefined);
       if (kind === "programs") return api.programs(pageIndex, 20, undefined, statusFilter || undefined);
       if (kind === "subjects") return api.subjects(pageIndex, 20, undefined, statusFilter || undefined);
@@ -83,7 +68,6 @@ export function CatalogPage() {
   });
   const status = useMutation({
     mutationFn: async ({ item, active }: { item: Item; active: boolean }) => {
-      if (session?.demo) return item;
       if (kind === "departments")
         return api.setDepartmentStatus(item.id, active);
       if (kind === "programs") return api.setProgramStatus(item.id, active);
@@ -95,7 +79,6 @@ export function CatalogPage() {
   });
   const registration = useMutation({
     mutationFn: async ({ item, open }: { item: Semester; open: boolean }) => {
-      if (session?.demo) return item;
       return api.toggleSemesterRegistration(item.id, open);
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["catalog", "semesters"] }),
@@ -124,12 +107,6 @@ export function CatalogPage() {
           </NavLink>
         ))}
       </nav>
-      <div className={uiStyles.filters} style={{ margin: "16px 0" }}>
-        <input className={uiStyles.select} style={{ width: '300px' }} aria-label="Search catalog" placeholder="Search code or name" value={search} onChange={(event) => setSearch(event.target.value)} />
-        <select className={uiStyles.select} aria-label="Filter catalog status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPageIndex(0); }}>
-          <option value="">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
-        </select>
-      </div>
       {query.isPending ? (
         <LoadingState />
       ) : query.error ? (
@@ -148,6 +125,14 @@ export function CatalogPage() {
         <Panel
           title={title(kind)}
           description={`${query.data.totalElements} records`}
+          action={
+            <div style={{ display: "flex", gap: "12px" }}>
+              <input className={uiStyles.select} style={{ width: '300px' }} aria-label="Search catalog" placeholder="Search code or name" value={search} onChange={(event) => setSearch(event.target.value)} />
+              <select className={uiStyles.select} aria-label="Filter catalog status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPageIndex(0); }}>
+                <option value="">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+              </select>
+            </div>
+          }
         >
           <DataTable>
             <thead>
@@ -296,8 +281,6 @@ function CreateCatalogDialog({
   const refs = useQuery({
     queryKey: ["catalog", "references"],
     queryFn: async () => {
-      if (session?.demo)
-        return { departments, programs, subjects, semesters, teachers };
       const [d, p, s, sem, t] = await Promise.all([
         api.departments(0, 100, "ACTIVE"),
         api.programs(0, 100, undefined, "ACTIVE"),
@@ -316,7 +299,6 @@ function CreateCatalogDialog({
   });
   const mutation = useMutation({
     mutationFn: async () => {
-      if (session?.demo) return {};
       if (item && kind === "departments") return api.updateDepartment(item.id, { code: form.code, name: form.name, description: form.description });
       if (item && kind === "programs") return api.updateProgram(item.id, { departmentId: form.parentId, code: form.code, name: form.name, durationSemesters: Number(form.duration), totalCredits: Number(form.credits) });
       if (item && kind === "subjects") return api.updateSubject(item.id, { programId: form.parentId, code: form.code, name: form.name, description: form.description, credits: Number(form.credits), prerequisiteSubjectIds: "prerequisiteSubjectIds" in item ? item.prerequisiteSubjectIds : [] });

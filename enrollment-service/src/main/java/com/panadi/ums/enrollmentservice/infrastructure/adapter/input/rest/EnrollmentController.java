@@ -70,7 +70,7 @@ class EnrollmentController {
         }
 
         Enrollment enrollment = useCase.createEnrollment(new CreateEnrollmentCommand(request.studentId(), request.semesterId(), request.sectionIds()));
-        audit.record("EnrollmentCreated", "enrollment-service", "Enrollment", enrollment.id(), null,
+        audit.record("EnrollmentCreated", "enrollment-service", "Enrollment", enrollment.id(), CurrentActor.required().userId(),
                 Map.of("studentId", enrollment.studentId(), "semesterId", enrollment.semesterId(), "status", enrollment.status().name()));
         return toResponse(enrollment);
     }
@@ -118,7 +118,7 @@ class EnrollmentController {
     @Transactional
     EnrollmentResponse cancelEnrollment(@PathVariable UUID id) {
         Enrollment enrollment = useCase.cancelEnrollment(id);
-        audit.record("EnrollmentCancelled", "enrollment-service", "Enrollment", enrollment.id(), null,
+        audit.record("EnrollmentCancelled", "enrollment-service", "Enrollment", enrollment.id(), CurrentActor.required().userId(),
                 Map.of("studentId", enrollment.studentId(), "semesterId", enrollment.semesterId(), "status", enrollment.status().name()));
         return toResponse(enrollment);
     }

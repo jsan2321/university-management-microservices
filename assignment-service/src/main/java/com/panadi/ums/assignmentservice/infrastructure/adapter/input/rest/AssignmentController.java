@@ -58,7 +58,9 @@ class AssignmentController {
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     @ResponseStatus(HttpStatus.CREATED)
     AssignmentResponse create(@Valid @RequestBody CreateAssignmentRequest request) {
-        return toResponse(useCase.createAssignment(new CreateAssignment(request.sectionId(), actingTeacher(request.teacherId()), request.title(), request.description(), request.dueAt(), request.maxPoints())));
+        AssignmentResponse res = toResponse(useCase.createAssignment(new CreateAssignment(request.sectionId(), actingTeacher(request.teacherId()), request.title(), request.description(), request.dueAt(), request.maxPoints())));
+        audit.record("AssignmentCreated", "assignment-service", "Assignment", res.id(), CurrentActor.required().userId(), Map.of("sectionId", res.sectionId(), "title", res.title()));
+        return res;
     }
 
     @GetMapping("/{id}")
@@ -103,14 +105,18 @@ class AssignmentController {
     @PreAuthorize("hasAnyRole('ADMIN','STUDENT')")
     @ResponseStatus(HttpStatus.CREATED)
     SubmissionResponse submit(@PathVariable UUID assignmentId, @Valid @RequestBody SubmitAssignmentRequest request) {
-        return toPublicResponse(useCase.submit(assignmentId, new SubmitAssignment(actingStudent(request.studentId()), request.content())));
+        SubmissionResponse res = toPublicResponse(useCase.submit(assignmentId, new SubmitAssignment(actingStudent(request.studentId()), request.content())));
+        audit.record("SubmissionCreated", "assignment-service", "Submission", res.id(), CurrentActor.required().userId(), Map.of("assignmentId", res.assignmentId(), "studentId", res.studentId()));
+        return res;
     }
 
     @PostMapping("/{assignmentId}/submissions/me")
     @PreAuthorize("hasRole('STUDENT')")
     @ResponseStatus(HttpStatus.CREATED)
     SubmissionResponse submitMine(@PathVariable UUID assignmentId, @Valid @RequestBody SubmitAssignmentRequest request) {
-        return toPublicResponse(useCase.submit(assignmentId, new SubmitAssignment(actingStudent(null), request.content())));
+        SubmissionResponse res = toPublicResponse(useCase.submit(assignmentId, new SubmitAssignment(actingStudent(null), request.content())));
+        audit.record("SubmissionCreated", "assignment-service", "Submission", res.id(), CurrentActor.required().userId(), Map.of("assignmentId", res.assignmentId(), "studentId", res.studentId()));
+        return res;
     }
 
     @GetMapping("/submissions/{id}")

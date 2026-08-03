@@ -8,6 +8,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableFeignClients
 @EnableDiscoveryClient
 @SpringBootApplication
+@org.springframework.context.annotation.Import(com.panadi.ums.auditcommon.AuditOutboxConfiguration.class)
 public class AcademicServiceApplication {
 
 	public static void main(String[] args) {

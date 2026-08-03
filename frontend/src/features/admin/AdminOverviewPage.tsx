@@ -9,7 +9,6 @@ import {
   PageHeader,
   Panel,
 } from "../../components/ui";
-import { departments, sections, students, teachers } from "../../test/fixtures";
 import styles from "../feature.module.css";
 export function AdminOverviewPage() {
   const api = useServiceApi();
@@ -17,13 +16,6 @@ export function AdminOverviewPage() {
   const query = useQuery({
     queryKey: ["admin", "overview"],
     queryFn: async () => {
-      if (session?.demo)
-        return {
-          students: students.length,
-          teachers: teachers.length,
-          departments: departments.length,
-          sections: sections.length,
-        };
       const [s, t, d, sec] = await Promise.all([
         api.students(0, 1),
         api.teachers(0, 1),

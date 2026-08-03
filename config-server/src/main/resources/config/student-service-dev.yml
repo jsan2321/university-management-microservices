@@ -66,3 +66,5 @@ resilience4j:
 logging:
   pattern:
     console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
+
+ums.audit.outbox.enabled: true

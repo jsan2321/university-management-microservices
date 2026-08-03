@@ -17,6 +17,7 @@ public class AuditRecord {
     private Instant occurredAt;
     private String traceId;
 
+    @org.hibernate.annotations.JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private String payload;
 

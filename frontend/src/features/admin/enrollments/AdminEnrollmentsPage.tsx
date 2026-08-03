@@ -18,14 +18,6 @@ import {
   StatusBadge,
   uiStyles,
 } from "../../../components/ui";
-import {
-  enrollments,
-  page,
-  sections,
-  semesters,
-  students,
-  subjects,
-} from "../../../test/fixtures";
 export function AdminEnrollmentsPage() {
   const [open, setOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -35,18 +27,20 @@ export function AdminEnrollmentsPage() {
   const query = useQuery({
     queryKey: ["admin", "enrollments", statusFilter],
     queryFn: () =>
-      session?.demo ? page(enrollments.filter(e => !statusFilter || e.status === statusFilter)) : api.enrollments(0, 100, { status: statusFilter || undefined }),
+      api.enrollments(0, 100, { status: statusFilter || undefined }),
   });
   const references = useQuery({
     queryKey: ["admin", "enrollment-references"],
-    queryFn: async () => session?.demo ? { students, semesters } : {
-      students: (await api.students(0, 100)).content,
-      semesters: (await api.semesters(0, 100)).content,
+    queryFn: async () => {
+      return {
+        students: (await api.students(0, 100)).content,
+        semesters: (await api.semesters(0, 100)).content,
+      };
     },
   });
   const cancel = useMutation({
     mutationFn: (id: string) =>
-      session?.demo ? Promise.resolve({}) : api.cancelEnrollment(id),
+      api.cancelEnrollment(id),
     onSuccess: () =>
       void qc.invalidateQueries({ queryKey: ["admin", "enrollments"] }),
   });
@@ -141,12 +135,12 @@ export function AdminEnrollmentsPage() {
     </>
   );
 }
-function studentName(id: string, values = students) {
-  const value = values.find((item) => item.id === id);
+function studentName(id: string, values?: { id: string, firstName: string, lastName: string }[]) {
+  const value = values?.find((item) => item.id === id);
   return value ? `${value.firstName} ${value.lastName}` : id;
 }
-function semesterName(id: string, values = semesters) {
-  return values.find((item) => item.id === id)?.name ?? "Academic term";
+function semesterName(id: string, values?: { id: string, name: string }[]) {
+  return values?.find((item) => item.id === id)?.name ?? "Academic term";
 }
 function EnrollmentDialog({ onClose }: { onClose: () => void }) {
   const api = useServiceApi();
@@ -158,7 +152,6 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
   const refs = useQuery({
     queryKey: ["enrollment", "references"],
     queryFn: async () => {
-      if (session?.demo) return { students, semesters, sections, subjects };
       const [s, sem, sec, sub] = await Promise.all([
         api.students(0, 100, undefined, "ACTIVE"),
         api.semesters(0, 100, "ACTIVE"),
@@ -175,9 +168,7 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
   });
   const mutation = useMutation({
     mutationFn: () =>
-      session?.demo
-        ? Promise.resolve({})
-        : api.createEnrollment({ studentId, semesterId, sectionIds }),
+      api.createEnrollment({ studentId, semesterId, sectionIds }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin", "enrollments"] });
       onClose();

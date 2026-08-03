@@ -8,7 +8,6 @@ import {
   Panel,
   StatusBadge,
 } from "../../components/ui";
-import { students, teachers } from "../../test/fixtures";
 import styles from "../feature.module.css";
 export function ProfilePage() {
   const { session } = useAuth();
@@ -29,11 +28,7 @@ export function ProfilePage() {
           phone: "Not required",
         });
       }
-      return session?.demo
-        ? session.role === "TEACHER"
-          ? teachers[0]
-          : students[0]
-        : session?.role === "TEACHER"
+      return session?.role === "TEACHER"
           ? api.teacherMe()
           : api.studentMe();
     },
