@@ -29,7 +29,7 @@ springdoc:
 ums:
   audit:
     outbox:
-      enabled: ${AUDIT_OUTBOX_ENABLED:false}
+      enabled: ${AUDIT_OUTBOX_ENABLED:true}
   security:
     audience: ums-api
     internal:

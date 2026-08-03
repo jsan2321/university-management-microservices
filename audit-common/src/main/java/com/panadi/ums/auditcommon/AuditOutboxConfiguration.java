@@ -25,12 +25,12 @@ public class AuditOutboxConfiguration {
     AuditOutbox realAuditOutbox(
             JdbcTemplate jdbc,
             ObjectMapper json,
-            KafkaTemplate<String, String> kafka,
-            Tracer tracer,
+            KafkaTemplate kafka,
+            org.springframework.beans.factory.ObjectProvider<Tracer> tracer,
             AuditOutboxProperties properties,
             MeterRegistry meters
     ) {
-        return new AuditOutbox(jdbc, json, kafka, tracer, properties, meters);
+        return new AuditOutbox(jdbc, json, kafka, tracer.getIfAvailable(), properties, meters);
     }
 
     @Bean

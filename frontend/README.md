@@ -34,7 +34,7 @@ Teacher and student identity is resolved through backend `/me` endpoints. Browse
 
 ## Available workflows
 
-- Administrator: live service overview, student/teacher provisioning, people status changes, academic catalog creation and status changes, enrollment creation and cancellation.
+- Administrator: live service overview, student/teacher provisioning, people status changes, academic catalog creation and status changes, enrollment creation and cancellation, and real-time audit log monitoring.
 - Teacher: self profile, assigned sections, attendance sessions and roster recording, assignment creation/publishing/closing, submission grading and grade release.
 - Student: self profile, active enrollments, section attendance percentage, published assignments, submission, and released grades.
 

@@ -33,6 +33,11 @@ class EmailService {
         message.setText(body);
         message.setFrom("no-reply@ums.local");
         
-        mailSender.send(message);
+        try {
+            mailSender.send(message);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(EmailService.class)
+                .warn("Failed to send welcome email to {}: {}", contactEmail, e.getMessage());
+        }
     }
 }

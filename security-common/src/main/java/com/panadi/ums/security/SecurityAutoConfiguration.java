@@ -106,11 +106,10 @@ public class SecurityAutoConfiguration {
 
     @Bean
     @ConditionalOnProperty(name = "ums.security.internal.client-secret")
-    InternalAccessTokenProvider internalAccessTokenProvider(RestClient.Builder builder,
-                                                            @Value("${ums.security.internal.token-uri}") String tokenUri,
+    InternalAccessTokenProvider internalAccessTokenProvider(@Value("${ums.security.internal.token-uri}") String tokenUri,
                                                             @Value("${ums.security.internal.client-id:ums-internal}") String clientId,
                                                             @Value("${ums.security.internal.client-secret}") String clientSecret) {
-        return new InternalAccessTokenProvider(builder, tokenUri, clientId, clientSecret);
+        return new InternalAccessTokenProvider(RestClient.builder(), tokenUri, clientId, clientSecret);
     }
 
     @Bean

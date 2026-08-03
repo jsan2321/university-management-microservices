@@ -22,6 +22,7 @@ For an automated development dataset, run `node scripts/seed-demo.mjs` from the 
 | Attendance | `/attendance-service` | `/api/v1/attendance` | Reads for authenticated roles; recording for administrators and teachers |
 | Assignment | `/assignment-service` | `/api/v1/assignments` | Reads for authenticated roles; authoring for administrators and teachers; submissions for students |
 | Identity | `/identity-service` | `/api/v1/provisioning` | Administrator-only |
+| Audit | `/audit-service` | `/api/audits` | Administrator-only |
 
 For example, the student profile endpoint is available through `http://localhost:8080/student-service/api/v1/students/me`.
 
@@ -33,6 +34,7 @@ For example, the student profile endpoint is available through `http://localhost
 - **Attendance:** sessions, attendance records, section rosters, and percentage views.
 - **Assignments:** assignment lifecycle, submissions, grading, and grade release.
 - **Identity provisioning:** create and link Keycloak teacher and student accounts with domain profiles.
+- **System audit:** paginated and filterable record history of asynchronous business events published via Kafka.
 
 ## Interactive OpenAPI documentation
 
@@ -46,6 +48,7 @@ Each business service exposes local Swagger UI for development and endpoint-leve
 | Attendance | `http://localhost:8084/swagger-ui/index.html` | `http://localhost:8084/v3/api-docs` |
 | Assignment | `http://localhost:8085/swagger-ui/index.html` | `http://localhost:8085/v3/api-docs` |
 | Identity | `http://localhost:8086/swagger-ui/index.html` | `http://localhost:8086/v3/api-docs` |
+| Audit | `http://localhost:8087/swagger-ui/index.html` | `http://localhost:8087/v3/api-docs` |
 
 The documentation pages and OpenAPI JSON are publicly readable in local development. Select **Authorize** in Swagger UI and enter a valid bearer token before calling protected business endpoints.
 

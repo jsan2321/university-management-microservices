@@ -3,6 +3,7 @@ import type {
   AttendancePercentage,
   AttendanceRecord,
   AttendanceSession,
+  AuditRecord,
   Department,
   Enrollment,
   PageResponse,
@@ -30,6 +31,7 @@ export function createServiceApi(getToken: TokenProvider) {
   const enrollment = "/enrollment-service/api/v1/enrollments";
   const attendance = "/attendance-service/api/v1/attendance";
   const assignment = "/assignment-service/api/v1/assignments";
+  const audit = "/audit-service/api/audits";
   const list = <T>(
     path: string,
     params: Record<string, string | number | undefined> = {},
@@ -37,6 +39,8 @@ export function createServiceApi(getToken: TokenProvider) {
   const statusAction = <T>(path: string, id: string, action: string) =>
     client.send<T>(`${path}/${id}/${action}`, "PATCH");
   return {
+    audits: (page = 0, size = 20, producer?: string, eventType?: string) =>
+      list<AuditRecord>(audit, { page, size, producer, eventType }),
     departments: (page = 0, size = 20, status?: string) =>
       list<Department>(`${academic}/departments`, { page, size, status }),
     createDepartment: (body: {

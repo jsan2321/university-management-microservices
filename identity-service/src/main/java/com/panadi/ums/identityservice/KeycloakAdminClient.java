@@ -25,12 +25,11 @@ class KeycloakAdminClient {
     private final String clientSecret;
     private volatile Token token;
 
-    KeycloakAdminClient(RestClient.Builder builder,
-                        @Value("${ums.keycloak.base-url:http://localhost:8180}") String baseUrl,
+    KeycloakAdminClient(@Value("${ums.keycloak.base-url:http://localhost:8180}") String baseUrl,
                         @Value("${ums.keycloak.realm:ums}") String realm,
                         @Value("${ums.keycloak.provisioner-client-id:ums-provisioner}") String clientId,
                         @Value("${ums.keycloak.provisioner-client-secret}") String clientSecret) {
-        this.restClient = builder.build();
+        this.restClient = RestClient.builder().build();
         this.baseUrl = baseUrl;
         this.realm = realm;
         this.clientId = clientId;

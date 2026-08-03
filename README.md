@@ -4,7 +4,7 @@ A full-stack university operations platform built with Spring Boot microservices
 
 ## What it does
 
-- **Administrators** provision student and teacher accounts, manage the academic catalog, and create or cancel enrollments.
+- **Administrators** provision student and teacher accounts, manage the academic catalog, create or cancel enrollments, and view real-time system audit logs.
 - **Teachers** view their assigned sections, record attendance, publish assignments, and grade submissions.
 - **Students** view their profile and enrollments, track attendance, submit assignments, and see released grades.
 
@@ -20,6 +20,7 @@ flowchart LR
     Gateway --> Attendance[Attendance service]
     Gateway --> Assignment[Assignment service]
     Gateway --> Identity[Identity service]
+    Gateway --> Audit[Audit service]
     Gateway --> Discovery[Discovery server]
     Gateway --> Config[Config server]
     Student --> Postgres[(PostgreSQL)]
@@ -28,6 +29,7 @@ flowchart LR
     Attendance --> Postgres
     Assignment --> Postgres
     Identity --> Postgres
+    Audit --> Postgres
 ```
 
 The gateway is the browser and API client entry point. Keycloak authenticates users and issues tokens; each business service owns its own logical PostgreSQL database and communicates with other services through APIs rather than cross-database foreign keys.
@@ -49,6 +51,7 @@ The gateway is the browser and API client entry point. Keycloak authenticates us
 - `enrollment-service` — enrollments and enrolled sections
 - `attendance-service` — attendance sessions, records, and percentages
 - `assignment-service` — assignments, submissions, grading, and grade release
+- `audit-service` — Kafka consumer and REST API for system-wide audit event records
 
 ### Frontend and documentation
 

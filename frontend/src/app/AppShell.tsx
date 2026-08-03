@@ -8,6 +8,7 @@ import {
   LogOut,
   Menu,
   NotebookPen,
+  ShieldCheck,
   UserRound,
   UsersRound,
   X,
@@ -36,6 +37,7 @@ const navigation: Record<
     { label: "Students", to: "/admin/people/students", icon: GraduationCap },
     { label: "Teachers", to: "/admin/people/teachers", icon: UsersRound },
     { label: "Enrollments", to: "/admin/enrollments", icon: BookOpen },
+    { label: "Audit logs", to: "/admin/audit-logs", icon: ShieldCheck },
     { label: "My profile", to: "/admin/profile", icon: UserRound },
   ],
   TEACHER: [

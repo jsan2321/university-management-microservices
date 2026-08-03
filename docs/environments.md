@@ -38,6 +38,7 @@ The bootstrap administrator manages Keycloak itself. The application administrat
 | Attendance service | `http://localhost:8084` | Direct service port (Swagger) |
 | Assignment service | `http://localhost:8085` | Direct service port (Swagger) |
 | Identity service | `http://localhost:8086` | Direct service port (Swagger) |
+| Audit service | `http://localhost:8087` | Direct service port (Swagger) |
 | Config Server | `http://localhost:8888` | Centralized configuration |
 | Eureka | `http://localhost:8761` | Service discovery registry |
 | Keycloak | `http://localhost:8180` | Authentication server |

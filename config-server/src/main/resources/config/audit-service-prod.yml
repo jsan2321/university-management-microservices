@@ -21,6 +21,15 @@ spring:
       group-id: audit-service
       properties:
         max.poll.interval.ms: 300000
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI}
+
+ums:
+  security:
+    audience: ${UMS_SECURITY_AUDIENCE:ums-api}
 
 eureka:
   instance:

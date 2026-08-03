@@ -189,3 +189,14 @@ export interface ProvisioningResponse {
   username?: string;
   universityEmail?: string;
 }
+export interface AuditRecord {
+  eventId: string;
+  eventType: string;
+  producer: string;
+  aggregateType: string;
+  aggregateId?: string;
+  actorId?: string;
+  occurredAt: string;
+  traceId?: string;
+  payload: string;
+}

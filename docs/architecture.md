@@ -87,9 +87,11 @@ The University Management System uses an event-driven architecture powered by Ka
 - Annotations and AOP aspects for declarative audit logging.
 - An implementation of the **Transactional Outbox** pattern. This ensures that business data changes and the corresponding audit events are committed in the same database transaction. A background job then reliably relays these events from the outbox table to Kafka.
 
-**`audit-service`**: An optional, standalone microservice.
-- Acts as a Kafka consumer, listening to configured audit topics.
-- Consumes events and persists them securely into its own logical PostgreSQL database schema for long-term storage and querying.
+**`audit-service`**: A standalone microservice.
+- Acts as a Kafka consumer, listening to configured audit topics (`ums.audit.v1`).
+- Consumes events and persists them into its own PostgreSQL database table (`audit_records`).
+- Exposes a secured, role-based REST API (`/api/audits`) to query audit events with pagination and filtering.
+- Powers the real-time **Audit Logs** dashboard in the React web portal for Administrators.
 
 ## Infrastructure
 
