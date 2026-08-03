@@ -104,7 +104,7 @@ class AttendanceServiceTests {
     @Test
     void calculatesAttendancePercentage() {
         AttendanceRepositoryPort repository = repository();
-        when(repository.countSessionsBySectionId(sectionId)).thenReturn(10L);
+        when(repository.countAttendancesByStudentIdAndSectionId(studentId, sectionId)).thenReturn(10L);
         when(repository.countPresentByStudentIdAndSectionId(studentId, sectionId)).thenReturn(8L);
 
         var percentage = service(repository, section("ACTIVE"), roster(studentId)).calculatePercentage(studentId, sectionId);

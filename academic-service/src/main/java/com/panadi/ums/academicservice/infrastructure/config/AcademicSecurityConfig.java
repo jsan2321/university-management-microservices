@@ -21,6 +21,7 @@ class AcademicSecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/internal/**").hasAnyRole("INTERNAL", "PROVISIONER")
                         .requestMatchers("/api/v1/academic/teachers/me").hasRole("TEACHER")
+                        .requestMatchers("/api/v1/academic/teachers/me/sections").hasRole("TEACHER")
                         .requestMatchers(HttpMethod.POST, "/api/v1/academic/teachers").denyAll()
                         .requestMatchers("/api/v1/academic/teachers/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/api/v1/academic/**").hasAnyRole("ADMIN", "TEACHER", "STUDENT")

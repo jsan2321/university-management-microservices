@@ -22,7 +22,7 @@ export function PageHeader({
   description,
   action,
 }: {
-  eyebrow: string;
+  eyebrow: ReactNode;
   title: string;
   description: string;
   action?: ReactNode;
@@ -86,10 +86,10 @@ export function PrimaryCell({
   );
 }
 export function StatusBadge({ value }: { value: string }) {
-  const tone = /active|present|published|graded|released|completed/i.test(value)
-    ? "positive"
-    : /suspend|absent|cancel|closed|inactive/i.test(value)
+  const tone = /suspend|absent|cancel|closed|inactive/i.test(value)
       ? "negative"
+      : /active|present|published|graded|released|completed/i.test(value)
+        ? "positive"
       : /late|draft|planned|upcoming/i.test(value)
         ? "warning"
         : "neutral";

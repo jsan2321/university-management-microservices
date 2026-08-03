@@ -8,15 +8,19 @@ import {
   LogOut,
   Menu,
   NotebookPen,
+  ShieldCheck,
   UserRound,
   UsersRound,
   X,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import type { Role } from "../api/generated/contracts";
+import { useQuery } from "@tanstack/react-query";
+import { useServiceApi } from "../api/use-service-api";
 import { useAuth } from "../auth/AuthProvider";
 import { roleLabels } from "../auth/session";
 import { Button } from "../components/ui";
+import { semesters } from "../test/fixtures";
 import styles from "./AppShell.module.css";
 
 const navigation: Record<
@@ -33,6 +37,8 @@ const navigation: Record<
     { label: "Students", to: "/admin/people/students", icon: GraduationCap },
     { label: "Teachers", to: "/admin/people/teachers", icon: UsersRound },
     { label: "Enrollments", to: "/admin/enrollments", icon: BookOpen },
+    { label: "Audit logs", to: "/admin/audit-logs", icon: ShieldCheck },
+    { label: "My profile", to: "/admin/profile", icon: UserRound },
   ],
   TEACHER: [
     { label: "Overview", to: "/teacher/overview", icon: LayoutDashboard },
@@ -42,6 +48,7 @@ const navigation: Record<
   ],
   STUDENT: [
     { label: "Overview", to: "/student/overview", icon: LayoutDashboard },
+    { label: "My classes", to: "/student/classes", icon: Library },
     { label: "My enrollments", to: "/student/enrollments", icon: BookOpen },
     { label: "Assignments", to: "/student/assignments", icon: NotebookPen },
     { label: "My profile", to: "/student/profile", icon: UserRound },
@@ -70,8 +77,29 @@ function initials(name: string) {
 }
 export function AppShell() {
   const { session, logout, setDemoRole } = useAuth();
+  const api = useServiceApi();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
+
+  const semesterQuery = useQuery({
+    queryKey: ["app-active-semester"],
+    queryFn: async () => {
+      if (session?.demo) return semesters.find((s) => s.status === "ACTIVE") || semesters[0];
+      const page = await api.semesters(0, 1, "ACTIVE");
+      return page.content.length > 0 ? page.content[0] : null;
+    },
+    enabled: session?.role !== "ADMIN",
+  });
+
+  const getWeekNumber = (startDateStr: string) => {
+    const start = new Date(startDateStr);
+    const now = new Date();
+    if (now < start) return 1;
+    const diffTime = now.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return Math.ceil(diffDays / 7) || 1;
+  };
+
   if (!session) return null;
   return (
     <div className={styles.shell}>
@@ -84,21 +112,30 @@ export function AppShell() {
           <X />
         </button>
         <Brand />
-        <section className={styles.term}>
-          <div className={styles.termTop}>
-            <span>Current term</span>
-            <span>Week 9</span>
-          </div>
-          <strong>2026 · Fall semester</strong>
-          <div className={styles.termTrack}>
-            <span />
-          </div>
-        </section>
+        {session.role !== "ADMIN" && semesterQuery.data && (
+          <section className={styles.term}>
+            <div className={styles.termTop}>
+              <span>Current term</span>
+              <span>Week {getWeekNumber(semesterQuery.data.startDate)}</span>
+            </div>
+            <strong>{semesterQuery.data.name}</strong>
+            <div className={styles.termTrack}>
+              <span />
+            </div>
+          </section>
+        )}
         <nav className={styles.nav} aria-label="Primary navigation">
           <p className={styles.navLabel}>
             {roleLabels[session.role]} workspace
           </p>
-          {navigation[session.role].map(({ label, to, icon: Icon }) => (
+          {navigation[session.role]
+            .filter(({ label }) => {
+              if (session.role === "STUDENT" && label === "My enrollments") {
+                return semesterQuery.data?.isRegistrationOpen === true;
+              }
+              return true;
+            })
+            .map(({ label, to, icon: Icon }) => (
             <NavLink
               key={to}
               to={to}

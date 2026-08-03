@@ -1,5 +1,6 @@
 package com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest;
 
+import com.panadi.ums.auditcommon.AuditOutbox;
 import com.panadi.ums.attendanceservice.application.PageResult;
 import com.panadi.ums.attendanceservice.application.command.CreateAttendanceSessionCommand;
 import com.panadi.ums.attendanceservice.application.command.RecordAttendanceCommand;
@@ -17,6 +18,7 @@ import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.At
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.PageResponse;
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.RecordAttendanceRequest;
 import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.SectionRosterResponse;
+import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.RosterStudentResponse;
 import com.panadi.ums.security.CurrentActor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -30,8 +32,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 
@@ -43,14 +47,16 @@ class AttendanceController {
     private final EnrollmentRosterLookupPort enrollmentRoster;
     private final AttendanceActorTeacherClient teachers;
     private final AttendanceActorStudentClient students;
+    private final AuditOutbox audit;
 
     AttendanceController(AttendanceUseCase useCase, AcademicSectionLookupPort sections, EnrollmentRosterLookupPort enrollmentRoster,
-                         AttendanceActorTeacherClient teachers, AttendanceActorStudentClient students) {
+                         AttendanceActorTeacherClient teachers, AttendanceActorStudentClient students, AuditOutbox audit) {
         this.useCase = useCase;
         this.sections = sections;
         this.enrollmentRoster = enrollmentRoster;
         this.teachers = teachers;
         this.students = students;
+        this.audit = audit;
     }
 
     @PostMapping("/sessions")
@@ -78,12 +84,17 @@ class AttendanceController {
 
     @PostMapping("/sessions/{sessionId}/records")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @Transactional
     List<AttendanceResponse> recordAttendance(@PathVariable UUID sessionId, @Valid @RequestBody RecordAttendanceRequest request) {
         requireTeacherSection(useCase.getSession(sessionId).sectionId());
         List<RecordAttendanceCommand.Record> records = request.records().stream()
                 .map(record -> new RecordAttendanceCommand.Record(record.studentId(), record.status()))
                 .toList();
-        return useCase.recordAttendance(sessionId, new RecordAttendanceCommand(records)).stream().map(this::toResponse).toList();
+        List<Attendance> saved = useCase.recordAttendance(sessionId, new RecordAttendanceCommand(records));
+        AttendanceSession session = useCase.getSession(sessionId);
+        audit.record("AttendanceRecorded", "attendance-service", "AttendanceSession", sessionId, null,
+                Map.of("sectionId", session.sectionId(), "recordCount", saved.size()));
+        return saved.stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/sessions/{sessionId}/records")
@@ -97,7 +108,12 @@ class AttendanceController {
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     SectionRosterResponse sectionRoster(@PathVariable UUID sectionId) {
         requireTeacherSection(sectionId);
-        return new SectionRosterResponse(sectionId, enrollmentRoster.getActiveStudentIdsBySection(sectionId).stream().sorted().toList());
+        List<RosterStudentResponse> roster = enrollmentRoster.getActiveStudentIdsBySection(sectionId).stream()
+                .sorted()
+                .map(students::byId)
+                .map(student -> new RosterStudentResponse(student.id(), student.studentCode(), student.firstName(), student.lastName()))
+                .toList();
+        return new SectionRosterResponse(sectionId, roster);
     }
 
     @GetMapping("/students/{studentId}/sections/{sectionId}/percentage")

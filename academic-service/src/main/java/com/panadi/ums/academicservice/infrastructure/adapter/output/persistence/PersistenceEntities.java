@@ -73,6 +73,7 @@ final class PersistenceEntities {
         LocalDate startDate;
         LocalDate endDate;
         @Enumerated(EnumType.STRING) SemesterStatus status;
+        boolean isRegistrationOpen;
         LocalDateTime createdAt;
         LocalDateTime updatedAt;
     }

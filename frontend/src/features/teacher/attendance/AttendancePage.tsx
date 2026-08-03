@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Save } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { ChevronLeft, Plus, Save } from "lucide-react";
+import { Link, useParams } from "react-router-dom";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
 import {
@@ -20,9 +20,10 @@ import {
 import {
   attendanceSessions,
   page,
-  sections,
   students,
+  teacherSections,
 } from "../../../test/fixtures";
+import { teacherSectionLabel } from "../teacher-section";
 import styles from "../../feature.module.css";
 const attendanceValues = ["PRESENT", "ABSENT", "LATE", "EXCUSED"] as const;
 export function AttendancePage() {
@@ -32,7 +33,10 @@ export function AttendancePage() {
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string>();
   const [creating, setCreating] = useState(false);
-  const [marks, setMarks] = useState<Record<string, string>>({});
+  const [draftMarks, setDraftMarks] = useState<{
+    sessionId?: string;
+    values: Record<string, string>;
+  }>({ values: {} });
   const sessionQuery = useQuery({
     queryKey: ["attendance", sectionId, "sessions"],
     enabled: Boolean(sectionId),
@@ -46,23 +50,51 @@ export function AttendancePage() {
     enabled: Boolean(sectionId),
     queryFn: () =>
       session?.demo
-        ? { sectionId, studentIds: students.map((item) => item.id) }
+        ? {
+            sectionId,
+            students: students.map((student) => ({
+              studentId: student.id,
+              studentCode: student.studentCode,
+              firstName: student.firstName,
+              lastName: student.lastName,
+            })),
+          }
         : api.sectionStudents(sectionId),
   });
   const activeSession = selected ?? sessionQuery.data?.content[0]?.id;
-  const roster = useMemo(
-    () => rosterQuery.data?.studentIds ?? [],
-    [rosterQuery.data],
+  const sectionQuery = useQuery({
+    queryKey: ["teacher", "sections"],
+    enabled: Boolean(sectionId),
+    queryFn: () => (session?.demo ? teacherSections : api.teacherSections()),
+  });
+  const recordsQuery = useQuery({
+    queryKey: ["attendance", activeSession, "records"],
+    enabled: Boolean(activeSession),
+    queryFn: () =>
+      session?.demo ? page([]) : api.attendanceRecords(activeSession!, 0, 100),
+  });
+  const roster = rosterQuery.data?.students ?? [];
+  const savedMarks = useMemo(
+    () =>
+      Object.fromEntries(
+        (recordsQuery.data?.content ?? []).map((record) => [
+          record.studentId,
+          record.status,
+        ]),
+      ),
+    [recordsQuery.data],
   );
+  const marks =
+    draftMarks.sessionId === activeSession ? draftMarks.values : savedMarks;
   const save = useMutation({
     mutationFn: () =>
       session?.demo
         ? Promise.resolve([])
         : api.recordAttendance(
             activeSession!,
-            roster.map((studentId) => ({
-              studentId,
-              status: marks[studentId] ?? "PRESENT",
+            roster.map((student) => ({
+              studentId: student.studentId,
+              status: marks[student.studentId] ?? "PRESENT",
             })),
           ),
     onSuccess: () =>
@@ -77,24 +109,34 @@ export function AttendancePage() {
         description="Open attendance from one of your assigned sections."
       />
     );
-  if (sessionQuery.isPending || rosterQuery.isPending)
+  if (sessionQuery.isPending || rosterQuery.isPending || sectionQuery.isPending || (Boolean(activeSession) && recordsQuery.isPending))
     return <LoadingState label="Preparing the attendance register…" />;
-  if (sessionQuery.error || rosterQuery.error)
+  if (sessionQuery.error || rosterQuery.error || sectionQuery.error || recordsQuery.error)
     return (
       <ErrorState
-        error={sessionQuery.error ?? rosterQuery.error}
+        error={sessionQuery.error ?? rosterQuery.error ?? sectionQuery.error ?? recordsQuery.error}
         retry={() => {
           void sessionQuery.refetch();
           void rosterQuery.refetch();
+          void sectionQuery.refetch();
+          void recordsQuery.refetch();
         }}
       />
     );
-  const section = sections.find((item) => item.id === sectionId);
+  const section = sectionQuery.data?.find((item) => item.id === sectionId);
   return (
     <>
       <PageHeader
-        eyebrow="Attendance register"
-        title={section?.sectionCode ?? "Section attendance"}
+        eyebrow={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Link to="/teacher/sections" style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', color: 'inherit' }}>
+              <ChevronLeft size={16} /> Back
+            </Link>
+            <span>/</span>
+            <span>Attendance register</span>
+          </div>
+        }
+        title={section ? teacherSectionLabel(section) : "Section attendance"}
         description="Create a class meeting, then mark each enrolled student before saving the register."
         action={
           <Button onClick={() => setCreating(true)}>
@@ -113,7 +155,9 @@ export function AttendancePage() {
               <li key={item.id}>
                 <button
                   className={`${styles.sessionButton} ${activeSession === item.id ? styles.selected : ""}`}
-                  onClick={() => setSelected(item.id)}
+                  onClick={() => {
+                    setSelected(item.id);
+                  }}
                 >
                   <strong>
                     Session {item.sessionNumber} · {item.date}
@@ -148,18 +192,13 @@ export function AttendancePage() {
                 </tr>
               </thead>
               <tbody>
-                {roster.map((id, index) => {
-                  const person = students.find((item) => item.id === id);
+                {roster.map((student) => {
                   return (
-                    <tr key={id}>
+                    <tr key={student.studentId}>
                       <td>
                         <PrimaryCell
-                          title={
-                            person
-                              ? `${person.firstName} ${person.lastName}`
-                              : `Enrolled student ${index + 1}`
-                          }
-                          detail={person?.studentCode ?? "Roster member"}
+                          title={`${student.firstName} ${student.lastName}`}
+                          detail={student.studentCode}
                         />
                       </td>
                       <td>
@@ -168,13 +207,18 @@ export function AttendancePage() {
                             <label key={value}>
                               <input
                                 type="radio"
-                                name={id}
+                                name={student.studentId}
                                 value={value}
-                                checked={(marks[id] ?? "PRESENT") === value}
+                                checked={(marks[student.studentId] ?? "PRESENT") === value}
                                 onChange={() =>
-                                  setMarks((current) => ({
-                                    ...current,
-                                    [id]: value,
+                                  setDraftMarks((current) => ({
+                                    sessionId: activeSession,
+                                    values: {
+                                      ...(current.sessionId === activeSession
+                                        ? current.values
+                                        : savedMarks),
+                                      [student.studentId]: value,
+                                    },
                                   }))
                                 }
                               />

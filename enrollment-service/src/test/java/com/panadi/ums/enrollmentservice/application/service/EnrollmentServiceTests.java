@@ -195,15 +195,15 @@ class EnrollmentServiceTests {
     }
 
     private SemesterSnapshot semester(String status) {
-        return new SemesterSnapshot(semesterId, status);
+        return new SemesterSnapshot(semesterId, "Semester 2026", status, true);
     }
 
     private SectionSnapshot section(UUID id, UUID subjectId, String status, int capacity, ScheduleSnapshot schedule) {
-        return new SectionSnapshot(id, subjectId, UUID.randomUUID(), semesterId, capacity, status, List.of(schedule));
+        return new SectionSnapshot(id, subjectId, UUID.randomUUID(), semesterId, "SEC-A", capacity, status, List.of(schedule));
     }
 
     private SubjectSnapshot subject(UUID id, UUID programId, String status, int credits) {
-        return new SubjectSnapshot(id, programId, credits, Set.of(), status);
+        return new SubjectSnapshot(id, programId, "SUB-101", "Subject name", credits, Set.of(), status);
     }
 
     private ScheduleSnapshot schedule(int startHour, int endHour) {

@@ -14,4 +14,6 @@ public interface EnrollmentUseCase {
     PageResult<Enrollment> listEnrollments(UUID studentId, UUID semesterId, EnrollmentStatus status, int page, int size);
     List<UUID> listActiveStudentIdsBySection(UUID sectionId);
     Enrollment cancelEnrollment(UUID id);
+    Enrollment addSection(UUID enrollmentId, UUID sectionId);
+    Enrollment dropSection(UUID enrollmentId, UUID sectionId);
 }

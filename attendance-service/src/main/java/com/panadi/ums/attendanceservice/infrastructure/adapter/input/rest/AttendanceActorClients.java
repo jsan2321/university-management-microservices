@@ -14,6 +14,7 @@ interface AttendanceActorTeacherClient {
 
 @FeignClient(name = "student-service", contextId = "attendanceActorStudentClient", path = "/internal/students")
 interface AttendanceActorStudentClient {
+    @GetMapping("/{studentId}") StudentProfile byId(@PathVariable UUID studentId);
     @GetMapping("/by-user/{userId}") StudentProfile byUser(@PathVariable UUID userId);
-    record StudentProfile(UUID id, UUID userId) {}
+    record StudentProfile(UUID id, UUID userId, String studentCode, String firstName, String lastName) {}
 }

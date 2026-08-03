@@ -3,6 +3,7 @@ import type {
   AttendancePercentage,
   AttendanceRecord,
   AttendanceSession,
+  AuditRecord,
   Department,
   Enrollment,
   PageResponse,
@@ -10,6 +11,7 @@ import type {
   ProvisioningResponse,
   Section,
   SectionStudents,
+  TeacherSection,
   Semester,
   Student,
   Subject,
@@ -29,6 +31,7 @@ export function createServiceApi(getToken: TokenProvider) {
   const enrollment = "/enrollment-service/api/v1/enrollments";
   const attendance = "/attendance-service/api/v1/attendance";
   const assignment = "/assignment-service/api/v1/assignments";
+  const audit = "/audit-service/api/audits";
   const list = <T>(
     path: string,
     params: Record<string, string | number | undefined> = {},
@@ -36,6 +39,8 @@ export function createServiceApi(getToken: TokenProvider) {
   const statusAction = <T>(path: string, id: string, action: string) =>
     client.send<T>(`${path}/${id}/${action}`, "PATCH");
   return {
+    audits: (page = 0, size = 20, producer?: string, eventType?: string) =>
+      list<AuditRecord>(audit, { page, size, producer, eventType }),
     departments: (page = 0, size = 20, status?: string) =>
       list<Department>(`${academic}/departments`, { page, size, status }),
     createDepartment: (body: {
@@ -43,6 +48,7 @@ export function createServiceApi(getToken: TokenProvider) {
       name: string;
       description?: string;
     }) => client.send<Department>(`${academic}/departments`, "POST", body),
+    updateDepartment: (id: string, body: { code: string; name: string; description?: string }) => client.send<Department>(`${academic}/departments/${id}`, "PUT", body),
     setDepartmentStatus: (id: string, active: boolean) =>
       statusAction<Department>(
         `${academic}/departments`,
@@ -63,6 +69,7 @@ export function createServiceApi(getToken: TokenProvider) {
       durationSemesters: number;
       totalCredits: number;
     }) => client.send<Program>(`${academic}/programs`, "POST", body),
+    updateProgram: (id: string, body: { departmentId: string; code: string; name: string; durationSemesters: number; totalCredits: number }) => client.send<Program>(`${academic}/programs/${id}`, "PUT", body),
     setProgramStatus: (id: string, active: boolean) =>
       statusAction<Program>(
         `${academic}/programs`,
@@ -76,6 +83,7 @@ export function createServiceApi(getToken: TokenProvider) {
       startDate: string;
       endDate: string;
     }) => client.send<Semester>(`${academic}/semesters`, "POST", body),
+    updateSemester: (id: string, body: { name: string; startDate: string; endDate: string }) => client.send<Semester>(`${academic}/semesters/${id}`, "PUT", body),
     setSemesterStatus: (id: string, active: boolean) =>
       statusAction<Semester>(
         `${academic}/semesters`,
@@ -92,6 +100,7 @@ export function createServiceApi(getToken: TokenProvider) {
       credits: number;
       prerequisiteSubjectIds: string[];
     }) => client.send<Subject>(`${academic}/subjects`, "POST", body),
+    updateSubject: (id: string, body: { programId: string; code: string; name: string; description?: string; credits: number; minimumCreditsRequired?: number; prerequisiteSubjectIds: string[] }) => client.send<Subject>(`${academic}/subjects/${id}`, "PUT", body),
     setSubjectStatus: (id: string, active: boolean) =>
       statusAction<Subject>(
         `${academic}/subjects`,
@@ -117,6 +126,7 @@ export function createServiceApi(getToken: TokenProvider) {
       capacity: number;
       schedules: { dayOfWeek: string; startTime: string; endTime: string }[];
     }) => client.send<Section>(`${academic}/sections`, "POST", body),
+    updateSection: (id: string, body: { subjectId: string; teacherId: string; semesterId: string; sectionCode: string; capacity: number; schedules: { dayOfWeek: string; startTime: string; endTime: string }[] }) => client.send<Section>(`${academic}/sections/${id}`, "PUT", body),
     setSectionStatus: (id: string, active: boolean) =>
       statusAction<Section>(
         `${academic}/sections`,
@@ -131,6 +141,9 @@ export function createServiceApi(getToken: TokenProvider) {
         status,
       }),
     teacherMe: () => client.get<Teacher>(`${academic}/teachers/me`),
+    teacherSections: () =>
+      client.get<TeacherSection[]>(`${academic}/teachers/me/sections`),
+    teacher: (id: string) => client.get<Teacher>(`${academic}/teachers/${id}`),
     setTeacherStatus: (id: string, active: boolean) =>
       statusAction<Teacher>(
         `${academic}/teachers`,
@@ -139,6 +152,7 @@ export function createServiceApi(getToken: TokenProvider) {
       ),
     students: (page = 0, size = 20, programId?: string, status?: string) =>
       list<Student>(student, { page, size, programId, status }),
+    student: (id: string) => client.get<Student>(`${student}/${id}`),
     studentMe: () => client.get<Student>(`${student}/me`),
     setStudentStatus: (
       id: string,
@@ -167,6 +181,7 @@ export function createServiceApi(getToken: TokenProvider) {
         status: string;
       }> = {},
     ) => list<Enrollment>(enrollment, { page, size, ...filters }),
+    enrollment: (id: string) => client.get<Enrollment>(`${enrollment}/${id}`),
     myEnrollments: (
       page = 0,
       size = 20,
@@ -181,6 +196,12 @@ export function createServiceApi(getToken: TokenProvider) {
     }) => client.send<Enrollment>(enrollment, "POST", body),
     cancelEnrollment: (id: string) =>
       statusAction<Enrollment>(enrollment, id, "cancel"),
+    addEnrollmentSection: (id: string, sectionId: string) =>
+      client.send<Enrollment>(`${enrollment}/${id}/sections`, "POST", { sectionId }),
+    dropEnrollmentSection: (id: string, sectionId: string) =>
+      statusAction<Enrollment>(`${enrollment}/${id}/sections`, sectionId, "drop"),
+    toggleSemesterRegistration: (id: string, open: boolean) =>
+      client.send<Semester>(`${academic}/semesters/${id}/toggle-registration?open=${open}`, "PATCH"),
     sectionStudents: (sectionId: string) =>
       client.get<SectionStudents>(
         `${attendance}/sections/${sectionId}/students`,
@@ -236,10 +257,10 @@ export function createServiceApi(getToken: TokenProvider) {
       dueAt: string;
       maxPoints: number;
     }) => client.send<Assignment>(assignment, "POST", body),
-    publishAssignment: (id: string) =>
-      statusAction<Assignment>(assignment, id, "publish"),
-    closeAssignment: (id: string) =>
-      statusAction<Assignment>(assignment, id, "close"),
+    publishAssignment: (id: string, teacherId?: string) =>
+      client.send<Assignment>(`${assignment}/${id}/publish`, "PATCH", { teacherId }),
+    closeAssignment: (id: string, teacherId?: string) =>
+      client.send<Assignment>(`${assignment}/${id}/close`, "PATCH", { teacherId }),
     submissions: (assignmentId: string, page = 0, size = 100, mine = false) =>
       list<Submission>(
         `${assignment}/${assignmentId}/submissions${mine ? "/me" : ""}`,
@@ -257,11 +278,11 @@ export function createServiceApi(getToken: TokenProvider) {
         "PATCH",
         { score, feedback },
       ),
-    releaseGrade: (id: string) =>
-      statusAction<Submission>(
-        `${assignment}/submissions`,
-        id,
-        "release-grade",
+    releaseGrade: (id: string, teacherId?: string) =>
+      client.send<Submission>(
+        `${assignment}/submissions/${id}/release-grade`,
+        "PATCH",
+        { teacherId },
       ),
   };
 }

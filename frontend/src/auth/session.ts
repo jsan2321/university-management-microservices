@@ -2,6 +2,7 @@ import type { Role } from "../api/generated/contracts";
 export interface Session {
   name: string;
   username: string;
+  email: string;
   role: Role;
   demo: boolean;
 }

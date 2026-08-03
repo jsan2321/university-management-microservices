@@ -11,19 +11,19 @@ public interface AcademicCatalogLookupPort {
     SectionSnapshot getSection(UUID sectionId);
     SubjectSnapshot getSubject(UUID subjectId);
 
-    record SemesterSnapshot(UUID id, String status) {
+    record SemesterSnapshot(UUID id, String name, String status, boolean isRegistrationOpen) {
         public boolean isActive() {
             return "ACTIVE".equals(status);
         }
     }
 
-    record SectionSnapshot(UUID id, UUID subjectId, UUID teacherId, UUID semesterId, int capacity, String status, List<ScheduleSnapshot> schedules) {
+    record SectionSnapshot(UUID id, UUID subjectId, UUID teacherId, UUID semesterId, String sectionCode, int capacity, String status, List<ScheduleSnapshot> schedules) {
         public boolean isActive() {
             return "ACTIVE".equals(status);
         }
     }
 
-    record SubjectSnapshot(UUID id, UUID programId, int credits, Set<UUID> prerequisiteSubjectIds, String status) {
+    record SubjectSnapshot(UUID id, UUID programId, String code, String name, int credits, Set<UUID> prerequisiteSubjectIds, String status) {
         public boolean isActive() {
             return "ACTIVE".equals(status);
         }

@@ -206,6 +206,11 @@ public class AcademicCatalogService implements AcademicCatalogUseCase {
     }
 
     @Override
+    public Semester toggleRegistration(UUID id, boolean open) {
+        return semesters.saveSemester(getSemester(id).toggleRegistration(open));
+    }
+
+    @Override
     public Subject createSubject(SubjectCommand command) {
         requireActiveProgram(command.programId());
         ensureUniqueSubjectCode(command.code(), null);

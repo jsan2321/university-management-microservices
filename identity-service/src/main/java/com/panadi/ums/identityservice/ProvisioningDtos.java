@@ -12,26 +12,20 @@ final class ProvisioningDtos {
     private ProvisioningDtos() {}
 
     record ProvisionTeacherRequest(
-            @NotBlank String username,
-            @Email @NotBlank String email,
-            @Size(min = 8) @NotBlank String temporaryPassword,
+            @Email @NotBlank String contactEmail,
             @NotBlank String firstName,
             @NotBlank String lastName,
             @NotNull UUID departmentId,
-            @NotBlank String teacherCode,
             String phone,
             @NotNull LocalDate hireDate
     ) {}
 
     record ProvisionStudentRequest(
-            @NotBlank String username,
-            @Email @NotBlank String email,
-            @Size(min = 8) @NotBlank String temporaryPassword,
+            @Email @NotBlank String contactEmail,
             @NotBlank String firstName,
             @NotBlank String lastName,
             String gender,
             @NotNull LocalDate dateOfBirth,
-            @NotBlank String studentCode,
             String phone,
             String address,
             @NotNull UUID programId,
@@ -40,6 +34,7 @@ final class ProvisioningDtos {
 
     record LinkExistingRequest(@NotNull UUID userId, @NotNull UUID profileId) {}
 
-    record ProvisioningResponse(UUID provisioningId, UUID userId, UUID profileId, String role, String status) {}
+    record ProvisioningResponse(UUID provisioningId, UUID userId, UUID profileId, String role, String status,
+                                String academicCode, String username, String universityEmail) {}
     record ErrorResponse(String code, String message) {}
 }

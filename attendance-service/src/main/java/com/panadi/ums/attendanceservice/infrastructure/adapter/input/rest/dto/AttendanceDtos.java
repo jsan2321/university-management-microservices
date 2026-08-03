@@ -33,7 +33,10 @@ public final class AttendanceDtos {
     public record AttendancePercentageResponse(UUID studentId, UUID sectionId, long presentCount, long totalSessions, double percentage, boolean eligibleForFinalEvaluation) {
     }
 
-    public record SectionRosterResponse(UUID sectionId, List<UUID> studentIds) {
+    public record SectionRosterResponse(UUID sectionId, List<RosterStudentResponse> students) {
+    }
+
+    public record RosterStudentResponse(UUID studentId, String studentCode, String firstName, String lastName) {
     }
 
     public record PageResponse<T>(List<T> content, int page, int size, long totalElements, int totalPages) {

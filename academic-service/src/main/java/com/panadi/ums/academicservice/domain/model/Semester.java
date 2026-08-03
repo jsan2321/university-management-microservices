@@ -10,6 +10,7 @@ public record Semester(
         LocalDate startDate,
         LocalDate endDate,
         SemesterStatus status,
+        boolean isRegistrationOpen,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -28,22 +29,29 @@ public record Semester(
 
     public static Semester create(String name, LocalDate startDate, LocalDate endDate) {
         LocalDateTime now = LocalDateTime.now();
-        return new Semester(null, name, startDate, endDate, SemesterStatus.INACTIVE, now, now);
+        return new Semester(null, name, startDate, endDate, SemesterStatus.INACTIVE, false, now, now);
     }
 
     public Semester update(String name, LocalDate startDate, LocalDate endDate) {
-        return new Semester(id, name, startDate, endDate, status, createdAt, LocalDateTime.now());
+        return new Semester(id, name, startDate, endDate, status, isRegistrationOpen, createdAt, LocalDateTime.now());
     }
 
     public Semester activate() {
-        return new Semester(id, name, startDate, endDate, SemesterStatus.ACTIVE, createdAt, LocalDateTime.now());
+        return new Semester(id, name, startDate, endDate, SemesterStatus.ACTIVE, isRegistrationOpen, createdAt, LocalDateTime.now());
     }
 
     public Semester deactivate() {
-        return new Semester(id, name, startDate, endDate, SemesterStatus.INACTIVE, createdAt, LocalDateTime.now());
+        return new Semester(id, name, startDate, endDate, SemesterStatus.INACTIVE, false, createdAt, LocalDateTime.now());
     }
 
     public Semester close() {
-        return new Semester(id, name, startDate, endDate, SemesterStatus.CLOSED, createdAt, LocalDateTime.now());
+        return new Semester(id, name, startDate, endDate, SemesterStatus.CLOSED, false, createdAt, LocalDateTime.now());
+    }
+
+    public Semester toggleRegistration(boolean open) {
+        if (status != SemesterStatus.ACTIVE && open) {
+            throw new DomainValidationException("Cannot open registration for an inactive semester");
+        }
+        return new Semester(id, name, startDate, endDate, status, open, createdAt, LocalDateTime.now());
     }
 }

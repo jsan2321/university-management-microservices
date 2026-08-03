@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
 import {
@@ -23,16 +24,25 @@ import {
   sections,
   semesters,
   students,
+  subjects,
 } from "../../../test/fixtures";
 export function AdminEnrollmentsPage() {
   const [open, setOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const api = useServiceApi();
   const { session } = useAuth();
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: ["admin", "enrollments"],
+    queryKey: ["admin", "enrollments", statusFilter],
     queryFn: () =>
-      session?.demo ? page(enrollments) : api.enrollments(0, 100),
+      session?.demo ? page(enrollments.filter(e => !statusFilter || e.status === statusFilter)) : api.enrollments(0, 100, { status: statusFilter || undefined }),
+  });
+  const references = useQuery({
+    queryKey: ["admin", "enrollment-references"],
+    queryFn: async () => session?.demo ? { students, semesters } : {
+      students: (await api.students(0, 100)).content,
+      semesters: (await api.semesters(0, 100)).content,
+    },
   });
   const cancel = useMutation({
     mutationFn: (id: string) =>
@@ -66,6 +76,17 @@ export function AdminEnrollmentsPage() {
         <Panel
           title="Enrollment records"
           description={`${query.data.totalElements} records`}
+          action={
+            <select
+              className={uiStyles.select}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="CANCELLED">Cancelled</option>
+            </select>
+          }
         >
           <DataTable>
             <thead>
@@ -85,25 +106,30 @@ export function AdminEnrollmentsPage() {
                 <tr key={item.id}>
                   <td>
                     <PrimaryCell
-                      title={studentName(item.studentId)}
-                      detail={item.studentId}
+                      title={studentName(item.studentId, references.data?.students)}
+                      detail={references.data?.students.find((student) => student.id === item.studentId)?.studentCode ?? "Student record"}
                     />
                   </td>
-                  <td>{semesterName(item.semesterId)}</td>
+                  <td>{semesterName(item.semesterId, references.data?.semesters)}</td>
                   <td>{item.details.length}</td>
                   <td>{item.totalCredits}</td>
                   <td>
                     <StatusBadge value={item.status} />
                   </td>
                   <td>
-                    {item.status === "ACTIVE" && (
-                      <Button
-                        variant="danger"
-                        onClick={() => cancel.mutate(item.id)}
-                      >
-                        Cancel
-                      </Button>
-                    )}
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      <Link to={`/admin/enrollments/${item.id}`} className={`${uiStyles.button} ${uiStyles.secondary}`} style={{ textDecoration: 'none' }}>
+                        Manage
+                      </Link>
+                      {item.status === "ACTIVE" && (
+                        <Button
+                          variant="danger"
+                          onClick={() => cancel.mutate(item.id)}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -115,12 +141,12 @@ export function AdminEnrollmentsPage() {
     </>
   );
 }
-function studentName(id: string) {
-  const value = students.find((item) => item.id === id);
+function studentName(id: string, values = students) {
+  const value = values.find((item) => item.id === id);
   return value ? `${value.firstName} ${value.lastName}` : id;
 }
-function semesterName(id: string) {
-  return semesters.find((item) => item.id === id)?.name ?? id;
+function semesterName(id: string, values = semesters) {
+  return values.find((item) => item.id === id)?.name ?? "Academic term";
 }
 function EnrollmentDialog({ onClose }: { onClose: () => void }) {
   const api = useServiceApi();
@@ -132,16 +158,18 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
   const refs = useQuery({
     queryKey: ["enrollment", "references"],
     queryFn: async () => {
-      if (session?.demo) return { students, semesters, sections };
-      const [s, sem, sec] = await Promise.all([
+      if (session?.demo) return { students, semesters, sections, subjects };
+      const [s, sem, sec, sub] = await Promise.all([
         api.students(0, 100, undefined, "ACTIVE"),
         api.semesters(0, 100, "ACTIVE"),
         api.sections(0, 100, { status: "ACTIVE" }),
+        api.subjects(0, 100, undefined, "ACTIVE"),
       ]);
       return {
         students: s.content,
         semesters: sem.content,
         sections: sec.content,
+        subjects: sub.content,
       };
     },
   });
@@ -155,6 +183,14 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
       onClose();
     },
   });
+
+  const selectedSections = refs.data?.sections.filter(sec => sectionIds.includes(sec.id)) || [];
+  const selectedSubjects = selectedSections.map(sec => sec.subjectId);
+  const totalCredits = selectedSections.reduce((acc, sec) => {
+    const subject = refs.data?.subjects.find(sub => sub.id === sec.subjectId);
+    return acc + (subject?.credits || 0);
+  }, 0);
+
   return (
     <Dialog
       title="Create enrollment"
@@ -197,29 +233,56 @@ function EnrollmentDialog({ onClose }: { onClose: () => void }) {
             </select>
           </Field>
           <Field label="Sections" className={uiStyles.span2}>
-            <div>
-              {refs.data?.sections
-                .filter((item) => !semesterId || item.semesterId === semesterId)
-                .map((item) => (
-                  <label
-                    key={item.id}
-                    style={{ display: "flex", gap: 8, padding: "7px 0" }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={sectionIds.includes(item.id)}
-                      onChange={(event) =>
-                        setSectionIds((current) =>
-                          event.target.checked
-                            ? [...current, item.id]
-                            : current.filter((id) => id !== item.id),
-                        )
-                      }
-                    />
-                    {item.sectionCode} · {item.schedules[0]?.dayOfWeek}{" "}
-                    {item.schedules[0]?.startTime}
-                  </label>
-                ))}
+            {refs.data?.sections && (
+              <div className={uiStyles.sectionGrid}>
+                {refs.data.sections
+                  .filter((item) => !semesterId || item.semesterId === semesterId)
+                  .filter((item) => {
+                    const selected = refs.data?.students.find((student) => student.id === studentId);
+                    const subject = refs.data?.subjects.find((value) => value.id === item.subjectId);
+                    return !selected || !subject || subject.programId === selected.programId;
+                  })
+                  .map((item) => {
+                    const subject = refs.data?.subjects.find((subject) => subject.id === item.subjectId);
+                    const isSelected = sectionIds.includes(item.id);
+                    const isDuplicateSubject = !isSelected && selectedSubjects.includes(item.subjectId);
+                    const isCreditsExceeded = !isSelected && totalCredits + (subject?.credits || 0) > 22;
+                    const isDisabled = isDuplicateSubject || isCreditsExceeded;
+
+                    return (
+                      <label
+                        key={item.id}
+                        className={`${uiStyles.sectionCard} ${isSelected ? uiStyles.sectionCardSelected : ""} ${isDisabled ? uiStyles.sectionCardDisabled : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          disabled={isDisabled}
+                          onChange={(event) =>
+                            setSectionIds((current) =>
+                              event.target.checked
+                                ? [...current, item.id]
+                                : current.filter((id) => id !== item.id),
+                            )
+                          }
+                        />
+                        <div className={uiStyles.sectionCardHeader}>
+                          <strong>{subject?.name ?? "Subject"} · {item.sectionCode}</strong>
+                          <span className={`${uiStyles.sectionBadge} ${uiStyles.badgeSubject}`}>{subject?.credits || 0} CR</span>
+                        </div>
+                        <div className={uiStyles.sectionCardDetails}>
+                          <span>🗓️ {item.schedules[0]?.dayOfWeek} {item.schedules[0]?.startTime}</span>
+                          <span>🪑 {item.capacity} seats limit</span>
+                          {isDuplicateSubject && <span style={{color: 'var(--red-650)'}}>Subject already selected</span>}
+                        </div>
+                      </label>
+                    );
+                  })}
+              </div>
+            )}
+            
+            <div className={`${uiStyles.creditsCounter} ${totalCredits > 22 ? uiStyles.creditsExceeded : ""}`}>
+              <span>Selected Credits: <strong>{totalCredits}</strong> / 22 max</span>
             </div>
           </Field>
         </div>

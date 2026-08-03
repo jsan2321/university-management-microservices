@@ -25,24 +25,24 @@ class KeycloakAdminClient {
     private final String clientSecret;
     private volatile Token token;
 
-    KeycloakAdminClient(RestClient.Builder builder,
-                        @Value("${ums.keycloak.base-url:http://localhost:8180}") String baseUrl,
+    KeycloakAdminClient(@Value("${ums.keycloak.base-url:http://localhost:8180}") String baseUrl,
                         @Value("${ums.keycloak.realm:ums}") String realm,
                         @Value("${ums.keycloak.provisioner-client-id:ums-provisioner}") String clientId,
                         @Value("${ums.keycloak.provisioner-client-secret}") String clientSecret) {
-        this.restClient = builder.build();
+        this.restClient = RestClient.builder().build();
         this.baseUrl = baseUrl;
         this.realm = realm;
         this.clientId = clientId;
         this.clientSecret = clientSecret;
     }
 
-    UUID createDisabledUser(String username, String email, String firstName, String lastName, String temporaryPassword, String role) {
+    UUID createProvisionedUser(String username, String universityEmail, String firstName, String lastName, String role, String temporaryPassword) {
         try {
-            Map<String, Object> credential = Map.of("type", "password", "value", temporaryPassword, "temporary", true);
             Map<String, Object> representation = Map.of(
-                    "username", username, "email", email, "firstName", firstName, "lastName", lastName,
-                    "enabled", false, "emailVerified", false, "credentials", List.of(credential));
+                    "username", username, "email", universityEmail, "firstName", firstName, "lastName", lastName,
+                    "enabled", true, "emailVerified", true,
+                    "credentials", List.of(Map.of("type", "password", "value", temporaryPassword, "temporary", true))
+            );
             URI location = restClient.post()
                     .uri(baseUrl + "/admin/realms/{realm}/users", realm)
                     .header(HttpHeaders.AUTHORIZATION, bearer())
@@ -67,6 +67,8 @@ class KeycloakAdminClient {
             throw new ProvisioningException("Keycloak user creation failed", exception);
         }
     }
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(KeycloakAdminClient.class);
 
     void requireRole(UUID userId, String role) {
         Map<?, ?>[] roles = restClient.get()

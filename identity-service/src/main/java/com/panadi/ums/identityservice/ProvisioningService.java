@@ -1,40 +1,55 @@
 package com.panadi.ums.identityservice;
 
+import com.panadi.ums.auditcommon.AuditOutbox;
 import com.panadi.ums.identityservice.ProvisioningDtos.LinkExistingRequest;
 import com.panadi.ums.identityservice.ProvisioningDtos.ProvisionStudentRequest;
 import com.panadi.ums.identityservice.ProvisioningDtos.ProvisionTeacherRequest;
 import com.panadi.ums.identityservice.ProvisioningDtos.ProvisioningResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
+@Transactional
 class ProvisioningService {
     private final ProvisioningRepository records;
     private final KeycloakAdminClient keycloak;
     private final TeacherProfileClient teachers;
     private final StudentProfileClient students;
+    private final IdentityGenerator identities;
+    private final AuditOutbox audit;
 
+    private final EmailService emailService;
+
+    @Autowired
     ProvisioningService(ProvisioningRepository records, KeycloakAdminClient keycloak,
-                        TeacherProfileClient teachers, StudentProfileClient students) {
+                        TeacherProfileClient teachers, StudentProfileClient students, IdentityGenerator identities, AuditOutbox audit,
+                        EmailService emailService) {
         this.records = records;
         this.keycloak = keycloak;
         this.teachers = teachers;
         this.students = students;
+        this.identities = identities;
+        this.audit = audit;
+        this.emailService = emailService;
     }
 
+
     ProvisioningResponse provisionTeacher(String key, ProvisionTeacherRequest request) {
-        return provision(key, "TEACHER", request.username(), request.email(), request.firstName(), request.lastName(),
-                request.temporaryPassword(), userId -> teachers.create(new TeacherProfileRequest(
-                        request.departmentId(), userId, request.teacherCode(), request.firstName(), request.lastName(),
-                        request.email(), request.phone(), request.hireDate())));
+        IdentityGenerator.IdentityBundle identity = identities.next("TEACHER", request.firstName(), request.lastName());
+        return provision(key, "TEACHER", identity, request.contactEmail(), request.firstName(), request.lastName(), userId -> teachers.create(new TeacherProfileRequest(
+                        request.departmentId(), userId, identity.code(), request.firstName(), request.lastName(),
+                        identity.universityEmail(), request.phone(), request.hireDate())));
     }
 
     ProvisioningResponse provisionStudent(String key, ProvisionStudentRequest request) {
-        return provision(key, "STUDENT", request.username(), request.email(), request.firstName(), request.lastName(),
-                request.temporaryPassword(), userId -> students.create(new StudentProfileRequest(
-                        userId, request.studentCode(), request.firstName(), request.lastName(), request.gender(),
-                        request.dateOfBirth(), request.email(), request.phone(), request.address(), request.programId(),
+        IdentityGenerator.IdentityBundle identity = identities.next("STUDENT", request.firstName(), request.lastName());
+        return provision(key, "STUDENT", identity, request.contactEmail(), request.firstName(), request.lastName(), userId -> students.create(new StudentProfileRequest(
+                        userId, identity.code(), request.firstName(), request.lastName(), request.gender(),
+                        request.dateOfBirth(), identity.universityEmail(), request.phone(), request.address(), request.programId(),
                         request.admissionDate())));
     }
 
@@ -46,8 +61,8 @@ class ProvisioningService {
         return link(key, "STUDENT", request, () -> students.link(request.profileId(), request.userId()));
     }
 
-    private ProvisioningResponse provision(String key, String role, String username, String email, String firstName,
-                                           String lastName, String password, ProfileCreator creator) {
+    private ProvisioningResponse provision(String key, String role, IdentityGenerator.IdentityBundle identity, String contactEmail, String firstName,
+                                           String lastName, ProfileCreator creator) {
         ProvisioningRecord existing = records.findByIdempotencyKey(key).orElse(null);
         if (existing != null) {
             if ("COMPLETED".equals(existing.status)) return response(existing);
@@ -62,16 +77,22 @@ class ProvisioningService {
         UUID userId = null;
         UUID profileId = null;
         try {
-            userId = keycloak.createDisabledUser(username, email, firstName, lastName, password, role);
+            String temporaryPassword = UUID.randomUUID().toString().substring(0, 8);
+            userId = keycloak.createProvisionedUser(identity.username(), identity.universityEmail(), firstName, lastName, role, temporaryPassword);
             record.update("KEYCLOAK_CREATED", userId, null, null);
             records.save(record);
             ProfileResponse profile = creator.create(userId);
             profileId = profile.id();
             record.update("PROFILE_CREATED", userId, profileId, null);
             records.save(record);
-            keycloak.enable(userId);
             record.update("COMPLETED", userId, profileId, null);
-            return response(records.save(record));
+            ProvisioningRecord completed = records.save(record);
+            audit.record(role.equals("STUDENT") ? "StudentProvisioned" : "TeacherProvisioned", "identity-service",
+                    role, profileId, userId, Map.of("userId", userId, "profileId", profileId));
+            
+            emailService.sendWelcomeEmail(contactEmail, firstName, identity.universityEmail(), temporaryPassword);
+            
+            return response(completed, identity);
         } catch (RuntimeException exception) {
             compensate(record, userId, profileId, exception);
             throw exception instanceof ProvisioningException provisioning ? provisioning
@@ -118,7 +139,10 @@ class ProvisioningService {
     }
 
     private ProvisioningResponse response(ProvisioningRecord value) {
-        return new ProvisioningResponse(value.id, value.userId, value.profileId, value.profileType, value.status);
+        return new ProvisioningResponse(value.id, value.userId, value.profileId, value.profileType, value.status, null, null, null);
+    }
+    private ProvisioningResponse response(ProvisioningRecord value, IdentityGenerator.IdentityBundle identity) {
+        return new ProvisioningResponse(value.id, value.userId, value.profileId, value.profileType, value.status, identity.code(), identity.username(), identity.universityEmail());
     }
 
     private interface ProfileCreator { ProfileResponse create(UUID userId); }

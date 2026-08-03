@@ -4,42 +4,46 @@ import com.panadi.ums.attendanceservice.application.ApplicationException;
 import com.panadi.ums.attendanceservice.application.DependencyUnavailableException;
 import com.panadi.ums.attendanceservice.application.ResourceNotFoundException;
 import com.panadi.ums.attendanceservice.domain.model.DomainValidationException;
-import com.panadi.ums.attendanceservice.infrastructure.adapter.input.rest.dto.AttendanceDtos.ErrorResponse;
+import com.panadi.ums.security.ApiErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    ErrorResponse handleNotFound(ResourceNotFoundException exception) {
-        return new ErrorResponse("RESOURCE_NOT_FOUND", exception.getMessage(), LocalDateTime.now());
+    ApiErrorResponse handleNotFound(ResourceNotFoundException exception, HttpServletRequest request) {
+        return ApiErrorResponse.of("RESOURCE_NOT_FOUND", exception.getMessage(),
+                HttpStatus.NOT_FOUND.value(), request.getRequestURI());
     }
 
     @ExceptionHandler({ApplicationException.class, DomainValidationException.class})
     @ResponseStatus(HttpStatus.CONFLICT)
-    ErrorResponse handleBusinessRule(RuntimeException exception) {
-        return new ErrorResponse("BUSINESS_RULE_VIOLATION", exception.getMessage(), LocalDateTime.now());
+    ApiErrorResponse handleBusinessRule(RuntimeException exception, HttpServletRequest request) {
+        return ApiErrorResponse.of("BUSINESS_RULE_VIOLATION", exception.getMessage(),
+                HttpStatus.CONFLICT.value(), request.getRequestURI());
     }
 
     @ExceptionHandler(DependencyUnavailableException.class)
     @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-    ErrorResponse handleDependency(DependencyUnavailableException exception) {
-        return new ErrorResponse("DEPENDENCY_UNAVAILABLE", exception.getMessage(), LocalDateTime.now());
+    ApiErrorResponse handleDependency(DependencyUnavailableException exception, HttpServletRequest request) {
+        return ApiErrorResponse.of("DEPENDENCY_UNAVAILABLE", exception.getMessage(),
+                HttpStatus.SERVICE_UNAVAILABLE.value(), request.getRequestURI());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    ErrorResponse handleValidation(MethodArgumentNotValidException exception) {
+    ApiErrorResponse handleValidation(MethodArgumentNotValidException exception, HttpServletRequest request) {
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + " " + error.getDefaultMessage())
                 .collect(Collectors.joining("; "));
-        return new ErrorResponse("VALIDATION_ERROR", message, LocalDateTime.now());
+        return ApiErrorResponse.of("VALIDATION_ERROR", message,
+                HttpStatus.BAD_REQUEST.value(), request.getRequestURI());
     }
 }

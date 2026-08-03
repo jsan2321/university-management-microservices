@@ -45,6 +45,7 @@ build/
 !.mvn/maven.config
 !.mvn/jvm.config
 .env
+.env.prod
 .agents
 .run/
 http-client.private.env.json

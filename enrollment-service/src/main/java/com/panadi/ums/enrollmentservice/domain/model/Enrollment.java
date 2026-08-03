@@ -43,6 +43,21 @@ public record Enrollment(
         return new Enrollment(id, studentId, semesterId, EnrollmentStatus.CANCELLED, details, createdAt, now, now);
     }
 
+    public Enrollment add(EnrollmentDetail detail) {
+        if (status != EnrollmentStatus.ACTIVE) throw new DomainValidationException("Only active enrollments can be changed");
+        List<EnrollmentDetail> updated = new java.util.ArrayList<>(details);
+        updated.add(detail);
+        return new Enrollment(id, studentId, semesterId, status, updated, createdAt, LocalDateTime.now(), cancelledAt);
+    }
+
+    public Enrollment drop(UUID sectionId) {
+        if (status != EnrollmentStatus.ACTIVE) throw new DomainValidationException("Only active enrollments can be changed");
+        List<EnrollmentDetail> updated = details.stream().filter(detail -> !detail.sectionId().equals(sectionId)).toList();
+        if (updated.size() == details.size()) throw new DomainValidationException("Section is not part of this enrollment");
+        if (updated.isEmpty()) throw new DomainValidationException("Use cancellation to remove the final section");
+        return new Enrollment(id, studentId, semesterId, status, updated, createdAt, LocalDateTime.now(), cancelledAt);
+    }
+
     public int totalCredits() {
         return details.stream().mapToInt(EnrollmentDetail::credits).sum();
     }

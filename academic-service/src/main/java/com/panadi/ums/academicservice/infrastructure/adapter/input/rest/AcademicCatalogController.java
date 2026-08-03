@@ -183,6 +183,11 @@ class AcademicCatalogController {
         return toResponse(useCase.deactivateSemester(id));
     }
 
+    @PatchMapping("/semesters/{id}/toggle-registration")
+    SemesterResponse toggleRegistration(@PathVariable UUID id, @RequestParam boolean open) {
+        return toResponse(useCase.toggleRegistration(id, open));
+    }
+
     @PostMapping("/subjects")
     @ResponseStatus(HttpStatus.CREATED)
     SubjectResponse createSubject(@Valid @RequestBody SubjectRequest request) {
@@ -265,7 +270,7 @@ class AcademicCatalogController {
     }
 
     private SemesterResponse toResponse(Semester semester) {
-        return new SemesterResponse(semester.id(), semester.name(), semester.startDate(), semester.endDate(), semester.status(), semester.createdAt(), semester.updatedAt());
+        return new SemesterResponse(semester.id(), semester.name(), semester.startDate(), semester.endDate(), semester.status(), semester.isRegistrationOpen(), semester.createdAt(), semester.updatedAt());
     }
 
     private SubjectResponse toResponse(Subject subject) {

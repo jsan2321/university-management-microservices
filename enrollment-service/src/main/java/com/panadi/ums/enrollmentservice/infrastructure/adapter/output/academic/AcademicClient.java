@@ -21,15 +21,15 @@ interface AcademicClient {
     @GetMapping("/subjects/{id}")
     SubjectResponse getSubject(@PathVariable UUID id);
 
-    record SemesterResponse(UUID id, String status) {
+    record SemesterResponse(UUID id, String name, String status, boolean isRegistrationOpen) {
     }
 
-    record SectionResponse(UUID id, UUID subjectId, UUID teacherId, UUID semesterId, int capacity, List<ScheduleResponse> schedules, String status) {
+    record SectionResponse(UUID id, UUID subjectId, UUID teacherId, UUID semesterId, String sectionCode, int capacity, List<ScheduleResponse> schedules, String status) {
     }
 
     record ScheduleResponse(DayOfWeek dayOfWeek, LocalTime startTime, LocalTime endTime) {
     }
 
-    record SubjectResponse(UUID id, UUID programId, int credits, Set<UUID> prerequisiteSubjectIds, String status) {
+    record SubjectResponse(UUID id, UUID programId, String code, String name, int credits, Set<UUID> prerequisiteSubjectIds, String status) {
     }
 }

@@ -12,6 +12,7 @@ import type {
 } from "../../../api/generated/contracts";
 import { useServiceApi } from "../../../api/use-service-api";
 import { useAuth } from "../../../auth/AuthProvider";
+import { Link } from "react-router-dom";
 import {
   Button,
   DataTable,
@@ -37,33 +38,32 @@ import {
 const schema = z.object({
   firstName: z.string().min(2, "Enter a first name"),
   lastName: z.string().min(2, "Enter a last name"),
-  email: z.email("Enter a valid email"),
-  code: z.string().min(2, "Enter an academic code"),
+  contactEmail: z.email("Enter a valid personal email"),
   organizationId: z.string().min(1, "Choose an academic unit"),
   primaryDate: z.string().min(1, "Choose a date"),
   secondaryDate: z.string().optional(),
   phone: z.string().optional(),
   gender: z.string().optional(),
   address: z.string().optional(),
-  temporaryPassword: z.string().min(8, "Use at least 8 characters"),
 });
 type FormValues = z.infer<typeof schema>;
 export function PeoplePage() {
   const kind = useParams().kind === "teachers" ? "teacher" : "student";
   const [creating, setCreating] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>("");
   const api = useServiceApi();
   const { session } = useAuth();
   const qc = useQueryClient();
   const query = useQuery<PageResponse<Student | Teacher>>({
-    queryKey: ["people", kind],
+    queryKey: ["people", kind, statusFilter],
     queryFn: async () => {
       if (session?.demo)
         return page<Student | Teacher>(
-          kind === "student" ? students : teachers,
+          (kind === "student" ? students : teachers).filter(p => !statusFilter || p.status === statusFilter)
         );
       return kind === "student"
-        ? await api.students(0, 100)
-        : await api.teachers(0, 100);
+        ? await api.students(0, 100, undefined, statusFilter || undefined)
+        : await api.teachers(0, 100, undefined, statusFilter || undefined);
     },
   });
   const changeStatus = useMutation({
@@ -99,7 +99,7 @@ export function PeoplePage() {
       ) : query.data.content.length === 0 ? (
         <EmptyState
           title={`No ${label.toLowerCase()} yet`}
-          description={`Provision the first ${kind}; the identity service will create both the Keycloak account and academic profile.`}
+          description={`Add the first ${kind} to automatically generate their credentials and university profile.`}
           action={
             <Button onClick={() => setCreating(true)}>Create {kind}</Button>
           }
@@ -108,6 +108,18 @@ export function PeoplePage() {
         <Panel
           title={label}
           description={`${query.data.totalElements} academic profiles`}
+          action={
+            <select
+              className={uiStyles.select}
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="SUSPENDED">Suspended</option>
+            </select>
+          }
         >
           <DataTable>
             <thead>
@@ -146,27 +158,37 @@ export function PeoplePage() {
                     <StatusBadge value={person.status} />
                   </td>
                   <td>
-                    <select
-                      className={uiStyles.select}
-                      value=""
-                      aria-label={`Change status for ${person.firstName} ${person.lastName}`}
-                      onChange={(event) => {
-                        if (event.target.value)
-                          changeStatus.mutate({
-                            id: person.id,
-                            action: event.target.value,
-                          });
-                      }}
-                    >
-                      <option value="" disabled>
-                        Change status
-                      </option>
-                      <option value="activate">Activate</option>
-                      <option value="deactivate">Deactivate</option>
-                      {kind === "student" && (
-                        <option value="suspend">Suspend</option>
-                      )}
-                    </select>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <Link
+                        to={`/admin/people/${kind === "student" ? "students" : "teachers"}/${person.id}`}
+                        className={uiStyles.button}
+                        style={{ padding: "0.25rem 0.5rem", height: "auto" }}
+                      >
+                        Profile
+                      </Link>
+                      <select
+                        className={uiStyles.select}
+                        value=""
+                        aria-label={`Change status for ${person.firstName} ${person.lastName}`}
+                        onChange={(event) => {
+                          if (event.target.value) {
+                            changeStatus.mutate({
+                              id: person.id,
+                              action: event.target.value,
+                            });
+                          }
+                        }}
+                      >
+                        <option value="" disabled>
+                          Change status
+                        </option>
+                        <option value="activate">Activate</option>
+                        <option value="deactivate">Deactivate</option>
+                        {kind === "student" && (
+                          <option value="suspend">Suspend</option>
+                        )}
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -208,15 +230,13 @@ function ProvisionDialog({
     defaultValues: {
       firstName: "",
       lastName: "",
-      email: "",
-      code: "",
+      contactEmail: "",
       organizationId: "",
       primaryDate: "",
       secondaryDate: "",
       phone: "",
       gender: "",
       address: "",
-      temporaryPassword: "",
     },
   });
   const mutation = useMutation({
@@ -224,12 +244,9 @@ function ProvisionDialog({
       const body =
         kind === "student"
           ? {
-              username: value.email,
-              email: value.email,
+              contactEmail: value.contactEmail,
               firstName: value.firstName,
               lastName: value.lastName,
-              temporaryPassword: value.temporaryPassword,
-              studentCode: value.code,
               dateOfBirth: value.primaryDate,
               programId: value.organizationId,
               admissionDate: value.secondaryDate,
@@ -238,17 +255,14 @@ function ProvisionDialog({
               address: value.address || undefined,
             }
           : {
-              username: value.email,
-              email: value.email,
+              contactEmail: value.contactEmail,
               firstName: value.firstName,
               lastName: value.lastName,
-              temporaryPassword: value.temporaryPassword,
-              teacherCode: value.code,
               departmentId: value.organizationId,
               hireDate: value.primaryDate,
               phone: value.phone || undefined,
             };
-      if (session?.demo) return { profileId: "preview", status: "COMPLETED" };
+      if (session?.demo) return { profileId: "preview", status: "COMPLETED", academicCode: "generated", username: "generated", universityEmail: "generated@ums.local" };
       return kind === "student"
         ? api.provisionStudent(body, key.current)
         : api.provisionTeacher(body, key.current);
@@ -264,7 +278,7 @@ function ProvisionDialog({
       >
         <EmptyState
           title="Ready to sign in"
-          description="The profile is linked to the new Keycloak identity. No user ID needs to be copied."
+          description={`Code: ${mutation.data.academicCode ?? "generated"} · Username: ${mutation.data.username ?? "generated"} · University email: ${mutation.data.universityEmail ?? "generated"}. A password-set invitation was sent to the personal contact address.`}
           action={
             <Button onClick={onClose}>
               <UserCheck size={17} />
@@ -282,7 +296,7 @@ function ProvisionDialog({
   return (
     <Dialog
       title={`Create ${kind}`}
-      description="One submission creates the Keycloak account and its linked academic profile."
+      description="Enter the details below to generate the academic profile and login credentials."
       onClose={onClose}
     >
       <form onSubmit={handleSubmit((values) => mutation.mutate(values))}>
@@ -293,14 +307,8 @@ function ProvisionDialog({
           <Field label="Last name" error={errors.lastName?.message}>
             <input {...register("lastName")} />
           </Field>
-          <Field label="University email" error={errors.email?.message}>
-            <input type="email" {...register("email")} />
-          </Field>
-          <Field
-            label={kind === "student" ? "Student code" : "Teacher code"}
-            error={errors.code?.message}
-          >
-            <input {...register("code")} />
+          <Field label="Personal contact email" error={errors.contactEmail?.message}>
+            <input type="email" {...register("contactEmail")} />
           </Field>
           <Field
             label={kind === "student" ? "Program" : "Department"}
@@ -344,20 +352,9 @@ function ProvisionDialog({
               <input {...register("address")} />
             </Field>
           )}
-          <Field
-            label="Temporary password"
-            error={errors.temporaryPassword?.message}
-            className={uiStyles.span2}
-          >
-            <input
-              type="password"
-              autoComplete="new-password"
-              {...register("temporaryPassword")}
-            />
-          </Field>
         </div>
         <p style={{ marginTop: 15 }} className={uiStyles.muted}>
-          The user must change this temporary password at first sign-in.
+          The system creates the academic code, username, university email, and a secure password-set invitation.
         </p>
         {mutation.error && (
           <p className={uiStyles.errorText}>{mutation.error.message}</p>

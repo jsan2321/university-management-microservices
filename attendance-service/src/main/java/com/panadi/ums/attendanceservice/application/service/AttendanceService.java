@@ -78,7 +78,7 @@ public class AttendanceService implements AttendanceUseCase {
 
     @Override
     public AttendancePercentage calculatePercentage(UUID studentId, UUID sectionId) {
-        long totalSessions = attendance.countSessionsBySectionId(sectionId);
+        long totalSessions = attendance.countAttendancesByStudentIdAndSectionId(studentId, sectionId);
         long presentCount = attendance.countPresentByStudentIdAndSectionId(studentId, sectionId);
         return AttendancePercentage.calculate(studentId, sectionId, presentCount, totalSessions);
     }

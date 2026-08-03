@@ -14,12 +14,17 @@ public final class EnrollmentDtos {
 
     public record CreateEnrollmentRequest(@NotNull UUID studentId, @NotNull UUID semesterId, @NotEmpty List<UUID> sectionIds) {
     }
+    public record AddSectionRequest(@NotNull UUID sectionId) {}
 
-    public record EnrollmentResponse(UUID id, UUID studentId, UUID semesterId, EnrollmentStatus status, int totalCredits, List<EnrollmentDetailResponse> details, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime cancelledAt) {
+    public record EnrollmentResponse(UUID id, UUID studentId, UUID semesterId, SemesterSummaryResponse semester, EnrollmentStatus status, int totalCredits, List<EnrollmentDetailResponse> details, boolean isRegistrationOpen, LocalDateTime createdAt, LocalDateTime updatedAt, LocalDateTime cancelledAt) {
     }
 
-    public record EnrollmentDetailResponse(UUID id, UUID sectionId, UUID subjectId, int credits) {
+    public record EnrollmentDetailResponse(UUID id, UUID sectionId, UUID subjectId, int credits, SectionSummaryResponse section, SubjectSummaryResponse subject) {
     }
+
+    public record SemesterSummaryResponse(UUID id, String name) {}
+    public record SectionSummaryResponse(UUID id, String sectionCode) {}
+    public record SubjectSummaryResponse(UUID id, String code, String name) {}
 
     public record PageResponse<T>(List<T> content, int page, int size, long totalElements, int totalPages) {
     }

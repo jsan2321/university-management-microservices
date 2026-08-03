@@ -4,6 +4,8 @@ import com.panadi.ums.assignmentservice.application.ApplicationException;
 import com.panadi.ums.assignmentservice.application.DependencyUnavailableException;
 import com.panadi.ums.assignmentservice.application.port.out.AcademicSectionLookupPort;
 import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -11,17 +13,18 @@ import java.util.UUID;
 @Component
 class AcademicSectionLookupAdapter implements AcademicSectionLookupPort {
     private final AcademicSectionClient client;
+    private final CircuitBreaker breaker;
 
-    AcademicSectionLookupAdapter(AcademicSectionClient client) { this.client = client; }
+    AcademicSectionLookupAdapter(AcademicSectionClient client, CircuitBreakerRegistry registry) { this.client = client; this.breaker = registry.circuitBreaker("academic-service"); }
 
     @Override
     public SectionSnapshot getSection(UUID sectionId) {
         try {
-            AcademicSectionClient.SectionResponse response = client.getSection(sectionId);
+            AcademicSectionClient.SectionResponse response = CircuitBreaker.decorateSupplier(breaker, () -> client.getSection(sectionId)).get();
             return new SectionSnapshot(response.id(), response.teacherId(), response.status());
         } catch (FeignException.NotFound exception) {
             throw new ApplicationException("Section does not exist");
-        } catch (FeignException exception) {
+        } catch (RuntimeException exception) {
             throw new DependencyUnavailableException("Academic Service is unavailable");
         }
     }

@@ -75,6 +75,11 @@ class AttendancePersistenceAdapter implements AttendanceRepositoryPort {
         return attendances.countByStudentIdAndSectionIdAndStatus(studentId, sectionId, AttendanceStatus.PRESENT);
     }
 
+    @Override
+    public long countAttendancesByStudentIdAndSectionId(UUID studentId, UUID sectionId) {
+        return attendances.countByStudentIdAndSectionId(studentId, sectionId);
+    }
+
     private AttendanceSessionEntity toEntity(AttendanceSession domain) {
         AttendanceSessionEntity entity = new AttendanceSessionEntity();
         entity.id = domain.id() == null ? UUID.randomUUID() : domain.id();

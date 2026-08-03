@@ -17,17 +17,16 @@ import static org.mockito.Mockito.when;
 
 class ProvisioningServiceTests {
     private final ProvisionTeacherRequest request = new ProvisionTeacherRequest(
-            "ada", "ada@example.com", "Temporary-123", "Ada", "Lovelace",
-            UUID.randomUUID(), "T-001", null, LocalDate.now());
+            "ada.personal@example.com", "Ada", "Lovelace", UUID.randomUUID(), null, LocalDate.now());
 
     @Test
-    void createsDisabledIdentityThenProfileAndEnablesIdentity() {
+    void createsInvitationIdentityThenProfile() {
         ProvisioningRepository records = repository();
         KeycloakAdminClient keycloak = mock(KeycloakAdminClient.class);
         TeacherProfileClient teachers = mock(TeacherProfileClient.class);
         UUID userId = UUID.randomUUID();
         UUID profileId = UUID.randomUUID();
-        when(keycloak.createDisabledUser(any(), any(), any(), any(), any(), any())).thenReturn(userId);
+        when(keycloak.createProvisionedUser(any(), any(), any(), any(), any(), any())).thenReturn(userId);
         when(teachers.create(any())).thenReturn(new ProfileResponse(profileId, userId));
 
         var response = service(records, keycloak, teachers).provisionTeacher("request-1", request);
@@ -35,7 +34,7 @@ class ProvisioningServiceTests {
         assertThat(response.status()).isEqualTo("COMPLETED");
         assertThat(response.userId()).isEqualTo(userId);
         assertThat(response.profileId()).isEqualTo(profileId);
-        verify(keycloak).enable(userId);
+        verify(keycloak, never()).enable(userId);
         verify(keycloak, never()).delete(userId);
     }
 
@@ -45,7 +44,7 @@ class ProvisioningServiceTests {
         KeycloakAdminClient keycloak = mock(KeycloakAdminClient.class);
         TeacherProfileClient teachers = mock(TeacherProfileClient.class);
         UUID userId = UUID.randomUUID();
-        when(keycloak.createDisabledUser(any(), any(), any(), any(), any(), any())).thenReturn(userId);
+        when(keycloak.createProvisionedUser(any(), any(), any(), any(), any(), any())).thenReturn(userId);
         when(teachers.create(any())).thenThrow(new RuntimeException("profile conflict"));
 
         assertThatThrownBy(() -> service(records, keycloak, teachers).provisionTeacher("request-2", request))
@@ -65,7 +64,7 @@ class ProvisioningServiceTests {
         var response = service(records, keycloak, mock(TeacherProfileClient.class)).provisionTeacher("same-key", request);
 
         assertThat(response.status()).isEqualTo("COMPLETED");
-        verify(keycloak, never()).createDisabledUser(any(), any(), any(), any(), any(), any());
+        verify(keycloak, never()).createProvisionedUser(any(), any(), any(), any(), any(), any());
     }
 
     private ProvisioningRepository repository() {
@@ -76,6 +75,8 @@ class ProvisioningServiceTests {
     }
 
     private ProvisioningService service(ProvisioningRepository records, KeycloakAdminClient keycloak, TeacherProfileClient teachers) {
-        return new ProvisioningService(records, keycloak, teachers, mock(StudentProfileClient.class));
+        IdentityGenerator identities = mock(IdentityGenerator.class);
+        when(identities.next(any(), any(), any())).thenReturn(new IdentityGenerator.IdentityBundle("TCH-2026-00001", "tch202600001", "tch202600001@ums.local"));
+        return new ProvisioningService(records, keycloak, teachers, mock(StudentProfileClient.class), identities, mock(com.panadi.ums.auditcommon.AuditOutbox.class), mock(EmailService.class));
     }
 }

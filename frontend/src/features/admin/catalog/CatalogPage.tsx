@@ -58,11 +58,15 @@ export function CatalogPage() {
     ? (rawKind as Kind)
     : "departments";
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<Item | null>(null);
+  const [pageIndex, setPageIndex] = useState(0);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [search, setSearch] = useState("");
   const api = useServiceApi();
   const { session } = useAuth();
   const qc = useQueryClient();
   const query = useQuery({
-    queryKey: ["catalog", kind],
+    queryKey: ["catalog", kind, pageIndex, statusFilter],
     queryFn: async () => {
       if (session?.demo)
         return page<Item>(
@@ -70,11 +74,11 @@ export function CatalogPage() {
             kind
           ] as Item[],
         );
-      if (kind === "departments") return api.departments(0, 100);
-      if (kind === "programs") return api.programs(0, 100);
-      if (kind === "subjects") return api.subjects(0, 100);
-      if (kind === "semesters") return api.semesters(0, 100);
-      return api.sections(0, 100);
+      if (kind === "departments") return api.departments(pageIndex, 20, statusFilter || undefined);
+      if (kind === "programs") return api.programs(pageIndex, 20, undefined, statusFilter || undefined);
+      if (kind === "subjects") return api.subjects(pageIndex, 20, undefined, statusFilter || undefined);
+      if (kind === "semesters") return api.semesters(pageIndex, 20, statusFilter || undefined);
+      return api.sections(pageIndex, 20, { status: statusFilter || undefined });
     },
   });
   const status = useMutation({
@@ -88,6 +92,13 @@ export function CatalogPage() {
       return api.setSectionStatus(item.id, active);
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["catalog", kind] }),
+  });
+  const registration = useMutation({
+    mutationFn: async ({ item, open }: { item: Semester; open: boolean }) => {
+      if (session?.demo) return item;
+      return api.toggleSemesterRegistration(item.id, open);
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["catalog", "semesters"] }),
   });
   return (
     <>
@@ -113,6 +124,12 @@ export function CatalogPage() {
           </NavLink>
         ))}
       </nav>
+      <div className={uiStyles.filters} style={{ margin: "16px 0" }}>
+        <input className={uiStyles.select} style={{ width: '300px' }} aria-label="Search catalog" placeholder="Search code or name" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <select className={uiStyles.select} aria-label="Filter catalog status" value={statusFilter} onChange={(event) => { setStatusFilter(event.target.value); setPageIndex(0); }}>
+          <option value="">All statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option>
+        </select>
+      </div>
       {query.isPending ? (
         <LoadingState />
       ) : query.error ? (
@@ -144,7 +161,7 @@ export function CatalogPage() {
               </tr>
             </thead>
             <tbody>
-              {query.data.content.map((item) => (
+              {query.data.content.filter((item) => `${displayName(item)} ${displayCode(item)}`.toLowerCase().includes(search.toLowerCase())).map((item) => (
                 <tr key={item.id}>
                   <td>
                     <PrimaryCell
@@ -157,32 +174,54 @@ export function CatalogPage() {
                     <StatusBadge value={item.status} />
                   </td>
                   <td>
-                    <select
-                      className={uiStyles.select}
-                      aria-label={`Change status for ${displayName(item)}`}
-                      value=""
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        if (value)
-                          status.mutate({ item, active: value === "activate" });
-                      }}
-                    >
-                      <option value="" disabled>
-                        Change status
-                      </option>
-                      <option value="activate">Activate</option>
-                      <option value="deactivate">Deactivate</option>
-                    </select>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <Button variant="secondary" onClick={() => setEditing(item)}>Edit</Button>
+                      <select
+                        className={uiStyles.select}
+                        style={{ width: 'auto', minWidth: '120px' }}
+                        aria-label={`Actions for ${displayName(item)}`}
+                        value=""
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          if (value === "activate" || value === "deactivate") {
+                            status.mutate({ item, active: value === "activate" });
+                          } else if (value === "open_registration" || value === "close_registration") {
+                            registration.mutate({ item: item as Semester, open: value === "open_registration" });
+                          }
+                          event.target.value = "";
+                        }}
+                      >
+                        <option value="" disabled>
+                          Actions
+                        </option>
+                        <option value="activate">Activate</option>
+                        <option value="deactivate">Deactivate</option>
+                        {kind === "semesters" && (
+                          <>
+                            <option value="open_registration">Open Registration</option>
+                            <option value="close_registration">Close Registration</option>
+                          </>
+                        )}
+                      </select>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </DataTable>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--line-100)' }}>
+            <span style={{ color: 'var(--ink-700)', fontSize: '14px' }}>Page {query.data.page + 1} of {Math.max(1, query.data.totalPages)}</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <Button variant="secondary" disabled={pageIndex === 0} onClick={() => setPageIndex((value) => value - 1)}>Previous</Button>
+              <Button variant="secondary" disabled={pageIndex + 1 >= query.data.totalPages} onClick={() => setPageIndex((value) => value + 1)}>Next</Button>
+            </div>
+          </div>
         </Panel>
       )}
       {creating && (
         <CreateCatalogDialog kind={kind} onClose={() => setCreating(false)} />
       )}
+      {editing && <CreateCatalogDialog kind={kind} item={editing} onClose={() => setEditing(null)} />}
     </>
   );
 }
@@ -203,7 +242,7 @@ function details(item: Item) {
   if ("durationSemesters" in item)
     return `${item.durationSemesters} semesters · ${item.totalCredits} credits`;
   if ("credits" in item) return `${item.credits} credits`;
-  if ("startDate" in item) return `${item.startDate} — ${item.endDate}`;
+  if ("startDate" in item) return `${item.startDate} — ${item.endDate} ${item.isRegistrationOpen ? '(Registration Open)' : '(Registration Closed)'}`;
   if ("capacity" in item)
     return `${item.capacity} seats · ${item.schedules.length} schedule blocks`;
   return item.description || "No description";
@@ -243,12 +282,14 @@ const empty: Form = {
 };
 function CreateCatalogDialog({
   kind,
+  item,
   onClose,
 }: {
   kind: Kind;
+  item?: Item;
   onClose: () => void;
 }) {
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState(() => item ? formFromItem(item) : empty);
   const api = useServiceApi();
   const { session } = useAuth();
   const qc = useQueryClient();
@@ -276,6 +317,11 @@ function CreateCatalogDialog({
   const mutation = useMutation({
     mutationFn: async () => {
       if (session?.demo) return {};
+      if (item && kind === "departments") return api.updateDepartment(item.id, { code: form.code, name: form.name, description: form.description });
+      if (item && kind === "programs") return api.updateProgram(item.id, { departmentId: form.parentId, code: form.code, name: form.name, durationSemesters: Number(form.duration), totalCredits: Number(form.credits) });
+      if (item && kind === "subjects") return api.updateSubject(item.id, { programId: form.parentId, code: form.code, name: form.name, description: form.description, credits: Number(form.credits), prerequisiteSubjectIds: "prerequisiteSubjectIds" in item ? item.prerequisiteSubjectIds : [] });
+      if (item && kind === "semesters") return api.updateSemester(item.id, { name: form.name, startDate: form.startDate, endDate: form.endDate });
+      if (item && kind === "sections") return api.updateSection(item.id, { subjectId: form.parentId, teacherId: form.teacherId, semesterId: form.semesterId, sectionCode: form.code, capacity: Number(form.capacity), schedules: [{ dayOfWeek: form.day, startTime: form.startTime, endTime: form.endTime }] });
       if (kind === "departments")
         return api.createDepartment({
           code: form.code,
@@ -339,7 +385,7 @@ function CreateCatalogDialog({
   );
   return (
     <Dialog
-      title={`New ${singular[kind]}`}
+      title={`${item ? "Edit" : "New"} ${singular[kind]}`}
       description="Choose related records by name. Internal identifiers remain hidden from the workflow."
       onClose={onClose}
     >
@@ -458,12 +504,19 @@ function CreateCatalogDialog({
             Cancel
           </Button>
           <Button disabled={mutation.isPending}>
-            {mutation.isPending ? "Creating…" : `Create ${singular[kind]}`}
+            {mutation.isPending ? "Saving…" : item ? `Save ${singular[kind]}` : `Create ${singular[kind]}`}
           </Button>
         </div>
       </form>
     </Dialog>
   );
+}
+function formFromItem(item: Item): Form {
+  if ("durationSemesters" in item) return { ...empty, code: item.code, name: item.name, parentId: item.departmentId, duration: String(item.durationSemesters), credits: String(item.totalCredits) };
+  if ("credits" in item) return { ...empty, code: item.code, name: item.name, description: item.description ?? "", parentId: item.programId, credits: String(item.credits) };
+  if ("startDate" in item) return { ...empty, name: item.name, startDate: item.startDate, endDate: item.endDate };
+  if ("capacity" in item) { const schedule = item.schedules[0]; return { ...empty, code: item.sectionCode, parentId: item.subjectId, teacherId: item.teacherId, semesterId: item.semesterId, capacity: String(item.capacity), day: schedule?.dayOfWeek ?? "MONDAY", startTime: schedule?.startTime ?? "09:00", endTime: schedule?.endTime ?? "10:30" }; }
+  return { ...empty, code: item.code, name: item.name, description: item.description ?? "" };
 }
 function Reference({
   label,

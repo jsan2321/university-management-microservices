@@ -4,6 +4,8 @@ import com.panadi.ums.enrollmentservice.application.ApplicationException;
 import com.panadi.ums.enrollmentservice.application.DependencyUnavailableException;
 import com.panadi.ums.enrollmentservice.application.port.out.AcademicCatalogLookupPort;
 import feign.FeignException;
+import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.github.resilience4j.circuitbreaker.CircuitBreakerRegistry;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -11,19 +13,21 @@ import java.util.UUID;
 @Component
 class AcademicCatalogLookupAdapter implements AcademicCatalogLookupPort {
     private final AcademicClient client;
+    private final CircuitBreaker breaker;
 
-    AcademicCatalogLookupAdapter(AcademicClient client) {
+    AcademicCatalogLookupAdapter(AcademicClient client, CircuitBreakerRegistry registry) {
         this.client = client;
+        this.breaker = registry.circuitBreaker("academic-service");
     }
 
     @Override
     public SemesterSnapshot getSemester(UUID semesterId) {
         try {
-            AcademicClient.SemesterResponse response = client.getSemester(semesterId);
-            return new SemesterSnapshot(response.id(), response.status());
+            AcademicClient.SemesterResponse response = CircuitBreaker.decorateSupplier(breaker, () -> client.getSemester(semesterId)).get();
+            return new SemesterSnapshot(response.id(), response.name(), response.status(), response.isRegistrationOpen());
         } catch (FeignException.NotFound exception) {
             throw new ApplicationException("Semester does not exist");
-        } catch (FeignException exception) {
+        } catch (RuntimeException exception) {
             throw new DependencyUnavailableException("Academic Service is unavailable");
         }
     }
@@ -31,12 +35,13 @@ class AcademicCatalogLookupAdapter implements AcademicCatalogLookupPort {
     @Override
     public SectionSnapshot getSection(UUID sectionId) {
         try {
-            AcademicClient.SectionResponse response = client.getSection(sectionId);
+            AcademicClient.SectionResponse response = CircuitBreaker.decorateSupplier(breaker, () -> client.getSection(sectionId)).get();
             return new SectionSnapshot(
                     response.id(),
                     response.subjectId(),
                     response.teacherId(),
                     response.semesterId(),
+                    response.sectionCode(),
                     response.capacity(),
                     response.status(),
                     response.schedules() == null ? java.util.List.of() : response.schedules().stream()
@@ -45,7 +50,7 @@ class AcademicCatalogLookupAdapter implements AcademicCatalogLookupPort {
             );
         } catch (FeignException.NotFound exception) {
             throw new ApplicationException("Section does not exist");
-        } catch (FeignException exception) {
+        } catch (RuntimeException exception) {
             throw new DependencyUnavailableException("Academic Service is unavailable");
         }
     }
@@ -53,11 +58,11 @@ class AcademicCatalogLookupAdapter implements AcademicCatalogLookupPort {
     @Override
     public SubjectSnapshot getSubject(UUID subjectId) {
         try {
-            AcademicClient.SubjectResponse response = client.getSubject(subjectId);
-            return new SubjectSnapshot(response.id(), response.programId(), response.credits(), response.prerequisiteSubjectIds(), response.status());
+            AcademicClient.SubjectResponse response = CircuitBreaker.decorateSupplier(breaker, () -> client.getSubject(subjectId)).get();
+            return new SubjectSnapshot(response.id(), response.programId(), response.code(), response.name(), response.credits(), response.prerequisiteSubjectIds(), response.status());
         } catch (FeignException.NotFound exception) {
             throw new ApplicationException("Subject does not exist");
-        } catch (FeignException exception) {
+        } catch (RuntimeException exception) {
             throw new DependencyUnavailableException("Academic Service is unavailable");
         }
     }
