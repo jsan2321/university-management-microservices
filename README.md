@@ -60,7 +60,7 @@ The gateway is the browser and API client entry point. Keycloak authenticates us
 
 ## Technology
 
-Java 21, Spring Boot, Spring Cloud Config, Eureka, Spring Cloud Gateway, OpenFeign, Spring Security, OAuth 2.0 Resource Server, Keycloak, PostgreSQL, Flyway, Maven, Docker Compose, React, TypeScript, Vite, TanStack Query, React Hook Form, Zod, Vitest, and JUnit.
+Java 21, Spring Boot, Spring Cloud Config, Eureka, Spring Cloud LoadBalancer, Spring Cloud Gateway, OpenFeign, Resilience4j, Spring Security, OAuth 2.0 Resource Server, Keycloak, PostgreSQL, Flyway, Maven, Docker Compose, Micrometer, OpenTelemetry, React, TypeScript, Vite, TanStack Query, React Hook Form, Zod, Vitest, and JUnit.
 
 ## Run locally
 

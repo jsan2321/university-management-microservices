@@ -10,7 +10,7 @@ Configuration is served centrally by `config-server`. PostgreSQL runs as one loc
 
 | Area | Services | Responsibility |
 | --- | --- | --- |
-| Platform | `config-server`, `discovery-server`, `api-gateway` | Configuration, discovery, routing, and edge security |
+| Platform | `config-server`, `discovery-server`, `api-gateway` | Configuration, discovery, client-side load balancing, routing, and edge security |
 | Identity | `identity-service`, `security-common` | Keycloak provisioning, profile linking, JWT audience and realm-role handling |
 | Academic records | `student-service`, `academic-service`, `enrollment-service` | People, catalog, sections, and enrollment lifecycle |
 | Teaching workflows | `attendance-service`, `assignment-service` | Attendance, assignments, submissions, grades, and release workflow |
@@ -25,6 +25,12 @@ Business services follow a domain, application, and infrastructure separation. C
 Keycloak owns credentials, sessions, roles, and token issuance. Business services own university-domain profiles and records. A student or teacher profile is linked to a Keycloak subject, and browser clients do not submit profile identifiers to establish their own identity.
 
 Identity provisioning generates immutable student/teacher codes, usernames, and university email addresses in the identity service. Administrators provide a personal contact email for the Keycloak verification/password-setup invitation; they never provide or see an initial password. Academic catalog and enrollment records use deactivation/cancellation rather than hard deletion to retain historical integrity.
+
+### Resilience and Load Balancing
+
+When business services communicate with each other (e.g., via OpenFeign), they use **Spring Cloud LoadBalancer** (integrated with Eureka) to distribute requests across available instances. 
+
+To prevent cascading failures when a downstream service is slow or unavailable, inter-service calls are protected by **Resilience4j Circuit Breakers**. These are programmatically configured in the infrastructure adapters (rather than relying on AOP annotations), allowing services to gracefully fall back or fail fast while keeping domain logic clean.
 
 ## Data ownership
 
@@ -92,6 +98,12 @@ The University Management System uses an event-driven architecture powered by Ka
 - Consumes events and persists them into its own PostgreSQL database table (`audit_records`).
 - Exposes a secured, role-based REST API (`/api/audits`) to query audit events with pagination and filtering.
 - Powers the real-time **Audit Logs** dashboard in the React web portal for Administrators.
+
+## Observability and Tracing
+
+The platform leverages **Spring Boot Actuator**, **Micrometer**, and **OpenTelemetry (OTEL)** for comprehensive observability:
+- **Metrics**: Actuator exposes `/actuator/prometheus` endpoints on every service, which are scraped by Prometheus.
+- **Distributed Tracing**: OpenTelemetry automatically instruments incoming HTTP requests, outgoing Feign client calls, and database queries. It injects trace IDs into headers, allowing tools like Tempo to stitch together requests that span multiple microservices.
 
 ## Infrastructure
 
