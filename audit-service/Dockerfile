@@ -1,10 +1,7 @@
 FROM eclipse-temurin:21-jdk-alpine AS builder
 WORKDIR /build
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-RUN ./mvnw dependency:go-offline -pl audit-service -am -q -B 2>/dev/null || true
-COPY audit-service/ audit-service/
-RUN ./mvnw -pl audit-service package -DskipTests -q -B
+COPY . .
+RUN ./mvnw -pl audit-service -am package -DskipTests -q -B
 
 FROM eclipse-temurin:21-jre-alpine
 RUN addgroup -S app && adduser -S app -G app
