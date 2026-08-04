@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, ShieldAlert, Filter } from "lucide-react";
+import { Eye, ShieldAlert } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import type { AuditRecord } from "../../../api/generated/contracts";
 import {
   Button,
@@ -24,8 +23,6 @@ export function AdminAuditLogsPage() {
   const [selectedAudit, setSelectedAudit] = useState<AuditRecord | null>(null);
 
   const api = useServiceApi();
-  const { session } = useAuth();
-
   const query = useQuery({
     queryKey: ["admin", "audit-logs", producerFilter, eventTypeFilter],
     queryFn: async () => {

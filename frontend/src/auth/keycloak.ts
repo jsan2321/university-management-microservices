@@ -1,7 +1,5 @@
 import Keycloak from "keycloak-js";
 import { roleFromClaims, type Session } from "./session";
-import type { Role } from "../api/generated/contracts";
-
 let keycloak: Keycloak | undefined;
 function adapter() {
   keycloak ??= new Keycloak({
@@ -40,7 +38,7 @@ export function login() {
 export function logout() {
   return adapter().logout({ redirectUri: window.location.origin });
 }
-export async function freshToken(session: Session | null) {
+export async function freshToken() {
   const kc = adapter();
   try {
     await kc.updateToken(30);

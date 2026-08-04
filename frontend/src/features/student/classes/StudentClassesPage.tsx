@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import {
   EmptyState,
   ErrorState,
@@ -17,7 +16,6 @@ import styles from "../../feature.module.css";
 
 export function StudentClassesPage() {
   const api = useServiceApi();
-  const { session } = useAuth();
   const [selectedSemester, setSelectedSemester] = useState<string>("");
 
   const query = useQuery({

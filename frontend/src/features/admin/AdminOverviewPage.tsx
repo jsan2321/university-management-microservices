@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useServiceApi } from "../../api/use-service-api";
-import { useAuth } from "../../auth/AuthProvider";
 import {
   ErrorState,
   LoadingState,
@@ -12,7 +11,6 @@ import {
 import styles from "../feature.module.css";
 export function AdminOverviewPage() {
   const api = useServiceApi();
-  const { session } = useAuth();
   const query = useQuery({
     queryKey: ["admin", "overview"],
     queryFn: async () => {

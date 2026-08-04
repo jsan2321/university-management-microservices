@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Plus } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import {
   Button,
   DataTable,
@@ -24,7 +23,6 @@ export function StudentEnrollmentsPage() {
   const [open, setOpen] = useState(false);
   const [hideOld, setHideOld] = useState(true);
   const api = useServiceApi();
-  const { session } = useAuth();
   const query = useQuery({
     queryKey: ["student", "enrollments"],
     queryFn: () =>
@@ -119,7 +117,6 @@ export function StudentEnrollmentsPage() {
 
 function StudentEnrollmentDialog({ onClose }: { onClose: () => void }) {
   const api = useServiceApi();
-  const { session, profileId } = useAuth();
   const qc = useQueryClient();
   const [semesterId, setSemesterId] = useState("");
   const [sectionIds, setSectionIds] = useState<string[]>([]);

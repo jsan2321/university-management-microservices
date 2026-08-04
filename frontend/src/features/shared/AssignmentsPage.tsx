@@ -4,7 +4,6 @@ import { Plus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import type { Assignment } from "../../api/generated/contracts";
 import { useServiceApi } from "../../api/use-service-api";
-import { useAuth } from "../../auth/AuthProvider";
 import {
   Button,
   DataTable,
@@ -19,7 +18,6 @@ import {
   StatusBadge,
   uiStyles,
 } from "../../components/ui";
-import styles from "../feature.module.css";
 import { teacherSectionLabel } from "../teacher/teacher-section";
 type AssignmentSection = {
   id: string;
@@ -28,7 +26,6 @@ type AssignmentSection = {
 };
 export function AssignmentsPage() {
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const teacher = session?.role === "TEACHER";
   const [searchParams, setSearchParams] = useSearchParams();
@@ -243,7 +240,6 @@ function StudentAssignmentAction({
   onSubmit: () => void;
 }) {
   const api = useServiceApi();
-  const { session } = useAuth();
   const query = useQuery({
     queryKey: ["student", "submission", assignment.id],
     queryFn: () => api.submissions(assignment.id, 0, 10, true),
@@ -275,7 +271,6 @@ function SubmissionReviewDialog({
   onClose: () => void;
 }) {
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const [scores, setScores] = useState<Record<string, string>>({});
   const [feedback, setFeedback] = useState<Record<string, string>>({});
@@ -415,7 +410,6 @@ function AssignmentDialog({
   onClose: () => void;
 }) {
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -502,7 +496,6 @@ function SubmissionDialog({
   onClose: () => void;
 }) {
   const api = useServiceApi();
-  const { session } = useAuth();
   const [content, setContent] = useState("");
   const mutation = useMutation({
     mutationFn: () =>

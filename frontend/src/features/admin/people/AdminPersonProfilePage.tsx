@@ -1,8 +1,8 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import {
   ErrorState,
   LoadingState,
@@ -16,7 +16,6 @@ import uiStyles from "../../../components/ui.module.css";
 export function AdminPersonProfilePage() {
   const { kind, id } = useParams();
   const api = useServiceApi();
-  const { session } = useAuth();
   const isTeacher = kind === "teachers";
 
   const query = useQuery({

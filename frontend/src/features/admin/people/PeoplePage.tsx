@@ -11,7 +11,6 @@ import type {
   Teacher,
 } from "../../../api/generated/contracts";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import { Link } from "react-router-dom";
 import {
   Button,
@@ -45,7 +44,6 @@ export function PeoplePage() {
   const [creating, setCreating] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const query = useQuery<PageResponse<Student | Teacher>>({
     queryKey: ["people", kind, statusFilter],
@@ -201,7 +199,6 @@ function ProvisionDialog({
   onClose: () => void;
 }) {
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const key = useRef(crypto.randomUUID());
   const units = useQuery({

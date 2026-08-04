@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, Plus, Save } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import {
   Button,
   DataTable,
@@ -23,7 +22,6 @@ const attendanceValues = ["PRESENT", "ABSENT", "LATE", "EXCUSED"] as const;
 export function AttendancePage() {
   const { sectionId = "" } = useParams();
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const [selected, setSelected] = useState<string>();
   const [creating, setCreating] = useState(false);
@@ -234,7 +232,6 @@ function SessionDialog({
   onClose: () => void;
 }) {
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const [number, setNumber] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));

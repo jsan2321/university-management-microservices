@@ -6,7 +6,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { Role } from "../api/generated/contracts";
 import {
   freshToken,
   login,
@@ -28,8 +27,8 @@ export function AuthProvider({
   initialSession: Session | null;
   children: ReactNode;
 }) {
-  const [session, setSession] = useState(initialSession);
-  const getToken = useCallback(() => freshToken(session), [session]);
+  const [session] = useState(initialSession);
+  const getToken = useCallback(() => freshToken(), []);
   const value = useMemo<AuthValue>(
     () => ({
       session,

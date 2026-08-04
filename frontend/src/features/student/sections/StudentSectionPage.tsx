@@ -1,8 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import {
   ErrorState,
   LoadingState,
@@ -15,7 +14,6 @@ export function StudentSectionPage() {
   const { sectionId = "" } = useParams();
   const navigate = useNavigate();
   const api = useServiceApi();
-  const { session } = useAuth();
   const query = useQuery({
     queryKey: ["student", "section", sectionId],
     enabled: Boolean(sectionId),

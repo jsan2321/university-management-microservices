@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, Plus } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import {
   Button,
   DataTable,
@@ -23,7 +22,6 @@ export function StudentEnrollmentDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const [open, setOpen] = useState(false);
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
 
   const query = useQuery({
@@ -159,9 +157,7 @@ function AddSectionDialog({ enrollmentId, semesterId, onClose }: { enrollmentId:
     },
   });
 
-  const selectedSection = refs.data?.sections.find(s => s.id === sectionId);
-  const selectedSubject = refs.data?.subjects.find(s => s.id === selectedSection?.subjectId);
-
+  
   return (
     <Dialog
       title="Add Class"

@@ -10,7 +10,6 @@ import type {
   Subject,
 } from "../../../api/generated/contracts";
 import { useServiceApi } from "../../../api/use-service-api";
-import { useAuth } from "../../../auth/AuthProvider";
 import {
   Button,
   DataTable,
@@ -54,7 +53,6 @@ export function CatalogPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const query = useQuery({
     queryKey: ["catalog", kind, pageIndex, statusFilter],
@@ -276,7 +274,6 @@ function CreateCatalogDialog({
 }) {
   const [form, setForm] = useState(() => item ? formFromItem(item) : empty);
   const api = useServiceApi();
-  const { session } = useAuth();
   const qc = useQueryClient();
   const refs = useQuery({
     queryKey: ["catalog", "references"],
