@@ -24,7 +24,10 @@ type AssignmentSection = {
   label: string;
   sectionCode: string;
 };
+import { useAuth } from "../../auth/AuthProvider";
+
 export function AssignmentsPage() {
+  const { session } = useAuth();
   const api = useServiceApi();
   const qc = useQueryClient();
   const teacher = session?.role === "TEACHER";
@@ -325,18 +328,11 @@ function SubmissionReviewDialog({
           </thead>
           <tbody>
             {query.data.content.map((item) => {
-              const student = students.find(
-                (value) => value.id === item.studentId,
-              );
               return (
                 <tr key={item.id}>
                   <td>
                     <PrimaryCell
-                      title={
-                        student
-                          ? `${student.firstName} ${student.lastName}`
-                          : "Enrolled student"
-                      }
+                      title="Enrolled student"
                       detail={item.content}
                     />
                   </td>
