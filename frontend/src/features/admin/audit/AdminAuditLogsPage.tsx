@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, ShieldAlert } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useServiceApi } from "../../../api/use-service-api";
 import type { AuditRecord } from "../../../api/generated/contracts";
 import {
@@ -56,7 +56,7 @@ export function AdminAuditLogsPage() {
         
         {query.isError && (
           <div style={{ padding: "40px 0" }}>
-            <ErrorState message="Failed to load audit logs from audit-service. Please ensure the service is running." />
+            <ErrorState error="Failed to load audit logs from audit-service. Please ensure the service is running." />
           </div>
         )}
         
@@ -99,7 +99,6 @@ export function AdminAuditLogsPage() {
           >
             {query.data.content.length === 0 ? (
               <EmptyState
-                icon={ShieldAlert}
                 title="No Audit Logs Found"
                 description="No security or system events match your current filter criteria."
               />
@@ -121,7 +120,7 @@ export function AdminAuditLogsPage() {
                       <td>
                         <PrimaryCell
                           title={new Date(item.occurredAt).toLocaleString()}
-                          subtitle={`Event ID: ${item.eventId.substring(0, 8)}...`}
+                          detail={`Event ID: ${item.eventId.substring(0, 8)}...`}
                         />
                       </td>
                       <td>

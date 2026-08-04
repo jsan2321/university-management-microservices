@@ -14,7 +14,8 @@ export function ProfilePage() {
   const api = useServiceApi();
   const query = useQuery({
     queryKey: [session?.role, "profile"],
-    queryFn: () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    queryFn: (): Promise<any> => {
       if (session?.role === "ADMIN") {
         const displayName = session.name.replace("Local ", "");
         const parts = displayName.split(" ");
@@ -38,6 +39,7 @@ export function ProfilePage() {
     return (
       <ErrorState error={query.error} retry={() => void query.refetch()} />
     );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const profile = query.data as any;
   const code =
     "teacherCode" in profile

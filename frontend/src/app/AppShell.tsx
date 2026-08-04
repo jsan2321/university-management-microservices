@@ -75,7 +75,7 @@ function initials(name: string) {
     .toUpperCase();
 }
 export function AppShell() {
-  const { session, logout, setDemoRole } = useAuth();
+  const { session, logout } = useAuth();
   const api = useServiceApi();
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
@@ -188,7 +188,7 @@ export function AppShell() {
               value={session.role}
               onChange={(event) => {
                 const role = event.target.value as Role;
-                setDemoRole(role);
+                // setDemoRole(role);
                 navigate(`/${role.toLowerCase()}/overview`);
               }}
               aria-label="Preview role"

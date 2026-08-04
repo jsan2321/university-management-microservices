@@ -61,7 +61,7 @@ export function AdminPersonProfilePage() {
       <ErrorState error={query.error} retry={() => void query.refetch()} />
     );
 
-  const profile = query.data;
+  const profile = query.data as any;
   const code =
     "teacherCode" in profile ? profile.teacherCode : profile.studentCode;
 

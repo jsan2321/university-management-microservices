@@ -38,6 +38,25 @@ export interface Program extends AuditFields {
   totalCredits: number;
   status: RecordStatus;
 }
+export interface Subject extends AuditFields {
+  id: string;
+  departmentId: string;
+  programId: string;
+  code: string;
+  name: string;
+  description?: string;
+  credits: number;
+  prerequisiteSubjectIds: string[];
+  status: RecordStatus;
+}
+export interface Semester extends AuditFields {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isRegistrationOpen: boolean;
+  status: RecordStatus;
+}
 export interface Teacher extends AuditFields {
   id: string;
   departmentId: string;
